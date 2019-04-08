@@ -30,11 +30,18 @@ class PageNumCanvas(canvas.Canvas):
         self.setFont("Helvetica", 10)
         self.drawRightString(675, 514, page)
 
+nameDocument = ''
+typeDocument = ''
 def membretado(design, doc):
+    styles = getSampleStyleSheet()
+    styleN = styles['Normal']
+    styleN.fontSize = 8
+    styleN.leading = 10
+    styleN.alignment = TA_CENTER
     logoTec = Image('logotec.jpg', 77, 42) # 101, 56
     tableHeaderContent = [
-        [logoTec, 'REGISTRO', 'Versión:', '0'],
-        ['', 'LISTA DE ASISTENCIA', 'Fecha emisión:', '12/02/1990'],
+        [logoTec, typeDocument, 'Versión:', '0'],
+        ['', Paragraph(nameDocument, styleN), 'Fecha emisión:', '12/02/1990'],
         ['', '', 'Página:', '']
     ]
     tableHeader = Table(tableHeaderContent, style=[
@@ -48,6 +55,9 @@ def membretado(design, doc):
     tableHeader.wrapOn(design, 0, 0)
     tableHeader.drawOn(design, 85, 510) 
 
+def returnPDF():
+    pass
+
 def assistantList(teachers, course):
     output = BytesIO()
     doc = SimpleDocTemplate(output, pagesize = landscape(letter), topMargin=105)
@@ -58,9 +68,12 @@ def assistantList(teachers, course):
     styleN.alignment = TA_CENTER
     styleH2 = styles['Heading2']
     styleH2.alignment = TA_CENTER
+    global nameDocument 
+    global typeDocument
+    typeDocument = 'REGISTRO'
+    nameDocument = 'LISTA DE ASISTENCIA'
     tableTitleList = [
-        [Paragraph("LISTA DE ASISTENCIA", styleH2), ''],
-        ['', '']
+        [Paragraph("LISTA DE ASISTENCIA", styleH2)]
     ]
     presential = ""
     virtual = ""
@@ -86,24 +99,13 @@ def assistantList(teachers, course):
         ['', '', '', '', '', 'L', 'M', 'M', 'J', 'V'],
         ['', '', '', '', '%', arrayDays[0], arrayDays[1], arrayDays[2], arrayDays[3], arrayDays[4]]
     ]
-    i=0
-    while i<len(teachers):
+    for x in range(0, len(teachers)):
         tableDataTeacherList.append([
-            str(i+1), teachers[i][0], teachers[i][1], teachers[i][2], '', '', '', '', '', ''
+            str(x+1), teachers[x][0], teachers[x][1], teachers[x][2], '', '', '', '', '', ''
         ])
-        i+=1    
-
-    #Preguntar a la maestra Claudia o Alba sobre el espaciado entre la tabla de datos y las firmas
-
-    tableTitle = Table(tableTitleList,
-        style=[
-            ('SPAN', (0, 0), (1, 1))
-        ]
-    )
-
+    tableTitle = Table(tableTitleList)
     tableDataCourse = Table(tableDataCourseList, style=[
             ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
-            # ('ALIGN',(0, 5), (-1, -1), 'CENTER'),
             ('FONTSIZE', (0, 0), (-1, -1), 8.5),
             ('SPAN', (3,3), (5,3)),
             ('GRID', (5,1), (6,0), 0.5, colors.black),  #Folio
@@ -115,7 +117,6 @@ def assistantList(teachers, course):
             ('GRID', (3,4), (5,3), 0.5, colors.black)  #Sede
         ], rowHeights=12, colWidths=(130, 200, 60, 90, 50, 70)
     )
-
     tableDataTeacher = Table(tableDataTeacherList, style=[
         ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
         ('ALIGN',(0, 0), (-1, 2),'CENTER'),
@@ -145,7 +146,7 @@ def assistantList(teachers, course):
     return response
 
 def coursesList(courses):
-    output = StringIO()
+    output = BytesIO()
     doc = SimpleDocTemplate(output,pagesize = landscape(letter), topMargin=105)
     styles = getSampleStyleSheet()
     styleN = styles['Normal']
@@ -154,20 +155,30 @@ def coursesList(courses):
     styleN.alignment = TA_CENTER
     styleH2 = styles['Heading2']
     styleH2.alignment = TA_CENTER
-
+    global nameDocument
+    global typeDocument
+    typeDocument = 'FORMATO' 
+    nameDocument = 'PROGRAMAddddddddddddddddddddddddddddddddddddddddddd INSTITUCIONAL DE FORMACION Y ACTUALIZACION DOCENTE Y PROFESIONAL'
     tableTitleList = [
-        [Paragraph("PERIODO JUNIO - AGOSTO 2018", styleH2), ''],
-        ['', '']
+        [Paragraph("PERIODO JUNIO - AGOSTO 2018", styleH2)]
     ]
-
-    tableTitle = Table(tableTitleList,
-        style=[
-            ('SPAN', (0, 0), (1, 1))
-        ]
-    )
-
+    tableCoursesList = [
+        ['No.', Paragraph('Nombre de los cursos', styleN), 'Objetivo', Paragraph('Periodo de Realizacion', styleN), 'Lugar', Paragraph('No. de horas x Curso', styleN), 'Instructor', 'Dirigido a:', 'Observaciones']
+    ]
+    for x in range(0, len(courses)):
+        tableCoursesList.append(
+            [str(x+1), Paragraph(courses[x][0], styleN), Paragraph(courses[x][1], styleN), Paragraph(courses[x][2], styleN), Paragraph(courses[x][3], styleN), Paragraph(courses[x][4], styleN), Paragraph(courses[x][5], styleN), Paragraph(courses[x][6], styleN), '']
+        )
+    tableTitle = Table(tableTitleList)
+    tableCourses = Table(tableCoursesList, style=[
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
+        ('ALIGN',(0, 0), (-1, -1),'CENTER'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8)
+    ], colWidths=(30, 80, 80, 80, 60, 50, 60, 80, 80))
     story = []
     story.append(tableTitle)
+    story.append(tableCourses)
     doc.build(story, canvasmaker=PageNumCanvas, onFirstPage=membretado, onLaterPages=membretado)
     pdf_out = output.getvalue()
     output.close()

@@ -1,12 +1,22 @@
-from reportlab.pdfgen import canvas
 from flask import jsonify, request, make_response
+from passlib.hash import pbkdf2_sha256 as sha256
+from reportlab.pdfgen import canvas
 from models import Course, Teacher
 from pdfs import *
 from app import app
 from marsh import *
-import hashlib
 
-# encripted = hashlib.sha256("valor en string").hexdigest()
+@app.route('/login', methods=['POST'])
+def login_user():
+    data = request.get_json()
+    try:
+        teacher = Teacher.objects.get(rfc=data["rfc"])
+        if sha256.verify(data["pin"], teacher["pin"]):
+            return jsonify({"message": "Bienvenido "+teacher["name"]+" "+teacher["firstSurname"]+" "+teacher["secondSurname"]})
+        else:
+            return jsonify({"message": "NIP incorrecto"})
+    except Teacher.DoesNotExist:
+        return jsonify({"message": "Docente no registrado"})
 
 @app.route('/courses', methods=['GET', 'POST'])
 def courses():
@@ -73,7 +83,7 @@ def teachers():
             studyLevel = data["studyLevel"],
             studyType = data["studyType"],
             degree = data["degree"],
-            pin = data["pin"]
+            pin = sha256.hash(data["pin"])
         ).save()
         return jsonify(data)
 
@@ -98,8 +108,6 @@ def assistantList_view(course_id):
         return jsonify({"message": "Curso inexistente"})
     all_teachers = Teacher.objects.all()
     teachers = []
-    # print course["dateEnd"].day
-    # print dir(course["dateEnd"])
     for teacher in all_teachers:
         teachers.append([
             teacher["name"] + ' ' + teacher["firstSurname"] + ' ' + teacher["secondSurname"],
@@ -112,9 +120,26 @@ def assistantList_view(course_id):
 def coursesList_view():
     all_courses = Course.objects.all()
     courses = []
+    months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
     for course in all_courses:
-        courses.append(course)
+        courses.append([
+            course["courseName"],
+            course["description"],
+            str(course["dateStart"].day)+"-"+str(course["dateEnd"].day)+" de "+months[course["dateStart"].month-1]+" del "+str(course["dateStart"].year),
+            course["place"],
+            str(course["totalHours"])+" hrs.",
+            course["teacherName"],
+            course["courseTo"]
+        ])
     return coursesList(courses)
+
+@app.errorhandler(404)
+def page_not_found(error):
+    error = {
+        "errorType": "404",
+        "message": "Pagina no encontrada"
+    }
+    return jsonify(error),404
 
 # EXAMPLES
 # """--------------  PyMongo  --------------"""
@@ -132,11 +157,3 @@ def coursesList_view():
 #     course = mongo.db.course.find({"_id": ObjectId(id)})
 #     data = json.loads(ju.dumps(course))
 #     return jsonify(data)
-
-@app.errorhandler(404)
-def page_not_found(error):
-    error = {
-        "errorType": "404",
-        "message": "Pagina no encontrada"
-    }
-    return jsonify(error),404

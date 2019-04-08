@@ -6,6 +6,8 @@ from flask import Flask
 app = Flask(__name__)
 app.config['MONGODB_DB'] = 'Capacitacion'
 
+database_name_auth = 'Teacher'
+
 db = MongoEngine(app)
 
 from views import *

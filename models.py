@@ -1,5 +1,7 @@
 from flask_mongoengine import MongoEngine
-from app import db
+from app import db, app
+import datetime
+import jwt
 
 class Course(db.Document):
     Online = 'Virtual'
@@ -41,16 +43,31 @@ class Teacher(db.Document):
         (departamentBoss, 'Jefe de departamento'),
     )
     rfc = db.StringField(max_length=13, required=True)
+    pin = db.StringField()
     name = db.StringField()
     firstSurname = db.StringField()
     secondSurname = db.StringField()
+    userType = db.StringField(choices=userType_choice)
+    departament = db.StringField()
     numberPhone = db.StringField()
     email = db.StringField()
-    userType = db.StringField(choices=userType_choice)
     studyLevel = db.StringField()
     studyType = db.StringField()
     degree = db.StringField()
-    pin = db.StringField()
+    def encode_auth_token(self, user_id):
+        try:
+            payload = {
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=5),
+                'iat': datetime.datetime.utcnow(),
+                'sub': user_id
+            }
+            return jwt.encode(
+                payload,
+                app.config.get('SECRET_KEY'),
+                algorithm='HS256'
+            )
+        except Exception as e:
+            return e
     
 class Letterhead(db.Document):
     version = db.IntField()
