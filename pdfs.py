@@ -3,9 +3,11 @@
 from reportlab.platypus import Table, TableStyle, Paragraph, SimpleDocTemplate, Image, PageTemplate, Spacer
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus.flowables import KeepTogether
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from flask import make_response, send_file
+from models import LetterheadMetaData
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
@@ -28,7 +30,7 @@ class PageNumCanvas(canvas.Canvas):
     def draw_page_number(self, page_count):
         page = "%s de %s" % (self._pageNumber, page_count)
         self.setFont("Helvetica", 10)
-        self.drawRightString(675, 514, page)
+        self.drawRightString(685, 514, page)
 
 nameDocument = ''
 typeDocument = ''
@@ -114,7 +116,7 @@ def assistantList(teachers, course):
             ('GRID', (1,4), (1,3), 0.5, colors.black),  #Periodo
             ('GRID', (3,3), (3,2), 0.5, colors.black),  #Duracion
             ('GRID', (5,3), (6,2), 0.5, colors.black),  #Horario
-            ('GRID', (3,4), (5,3), 0.5, colors.black)  #Sede
+            ('GRID', (3,4), (5,3), 0.5, colors.black)   #Sede
         ], rowHeights=12, colWidths=(130, 200, 60, 90, 50, 70)
     )
     tableDataTeacher = Table(tableDataTeacherList, style=[
@@ -147,7 +149,7 @@ def assistantList(teachers, course):
 
 def coursesList(courses):
     output = BytesIO()
-    doc = SimpleDocTemplate(output,pagesize = landscape(letter), topMargin=105)
+    doc = SimpleDocTemplate(output,pagesize = landscape(letter), topMargin=105, bottomMargin=50)
     styles = getSampleStyleSheet()
     styleN = styles['Normal']
     styleN.fontSize = 8
@@ -158,7 +160,7 @@ def coursesList(courses):
     global nameDocument
     global typeDocument
     typeDocument = 'FORMATO' 
-    nameDocument = 'PROGRAMAddddddddddddddddddddddddddddddddddddddddddd INSTITUCIONAL DE FORMACION Y ACTUALIZACION DOCENTE Y PROFESIONAL'
+    nameDocument = 'PROGRAMA INSTITUCIONAL DE FORMACION Y ACTUALIZACION DOCENTE Y PROFESIONAL'
     tableTitleList = [
         [Paragraph("PERIODO JUNIO - AGOSTO 2018", styleH2)]
     ]
@@ -169,6 +171,12 @@ def coursesList(courses):
         tableCoursesList.append(
             [str(x+1), Paragraph(courses[x][0], styleN), Paragraph(courses[x][1], styleN), Paragraph(courses[x][2], styleN), Paragraph(courses[x][3], styleN), Paragraph(courses[x][4], styleN), Paragraph(courses[x][5], styleN), Paragraph(courses[x][6], styleN), '']
         )
+    tableSignsList = [
+        ["Elaboró", "Aprobó"],
+        ["", ""],
+        ["Nombre y firma", "Nombre y firma"],
+        ["Fecha:", "Fecha:"]
+    ]
     tableTitle = Table(tableTitleList)
     tableCourses = Table(tableCoursesList, style=[
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
@@ -176,9 +184,17 @@ def coursesList(courses):
         ('ALIGN',(0, 0), (-1, -1),'CENTER'),
         ('FONTSIZE', (0, 0), (-1, -1), 8)
     ], colWidths=(30, 80, 80, 80, 60, 50, 60, 80, 80))
+    tableSigns = Table(tableSignsList, style=[
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
+        ('ALIGN',(0, 0), (-1, -1),'CENTER'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8)
+    ], colWidths=200, rowHeights=(10, 20, 10, 10))
     story = []
     story.append(tableTitle)
     story.append(tableCourses)
+    story.append(Spacer(1,inch/4))
+    story.append(KeepTogether(tableSigns))
     doc.build(story, canvasmaker=PageNumCanvas, onFirstPage=membretado, onLaterPages=membretado)
     pdf_out = output.getvalue()
     output.close()

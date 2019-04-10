@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
 
+from flask_jwt_extended import JWTManager
 from flask_mongoengine import MongoEngine
 from flask import Flask
 
 app = Flask(__name__)
 app.config['MONGODB_DB'] = 'Capacitacion'
+app.config['JWT_SECRET_KEY'] = 'jwt-secret-string'
 
-database_name_auth = 'Teacher'
+jwt = JWTManager(app)
+
+# database_name_auth = 'Teacher'
 
 db = MongoEngine(app)
 
 from views import *
 
 if __name__ == '__main__':
-   app.run(debug=True, port=5001)
+   app.run(debug=True, port=5000)
 
 # First upload
 # git init 

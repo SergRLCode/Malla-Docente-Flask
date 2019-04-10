@@ -23,6 +23,7 @@ class Course(db.Document):
     description = db.StringField()
     dateStart = db.DateTimeField()
     dateEnd = db.DateTimeField()
+    # 2019-04-08 13:21:08.456998 --> formato a ingresar para las fechas
     totalHours = db.IntField()
     timetable = db.StringField()
     place = db.StringField()
@@ -52,7 +53,7 @@ class Teacher(db.Document):
     numberPhone = db.StringField()
     email = db.StringField()
     studyLevel = db.StringField()
-    studyType = db.StringField()
+    studyType= db.StringField()
     degree = db.StringField()
     def encode_auth_token(self, user_id):
         try:
@@ -69,9 +70,11 @@ class Teacher(db.Document):
         except Exception as e:
             return e
     
-class Letterhead(db.Document):
+class LetterheadMetaData(db.Document):
     version = db.IntField()
     emitDate = db.StringField()
+    nameDocument = db.StringField()
+    typeDocument = db.StringField()
 
 # python3, reserved word "dir", pa ver metodos
 

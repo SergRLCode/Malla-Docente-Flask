@@ -1,10 +1,12 @@
+from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
 from flask import jsonify, request, make_response
 from passlib.hash import pbkdf2_sha256 as sha256
+from datetime import datetime as dt, timedelta as td
 from reportlab.pdfgen import canvas
 from models import Course, Teacher
-from pdfs import *
 from app import app
 from marsh import *
+from pdfs import *
 
 @app.route('/login', methods=['POST'])
 def login_user():
@@ -12,7 +14,14 @@ def login_user():
     try:
         teacher = Teacher.objects.get(rfc=data["rfc"])
         if sha256.verify(data["pin"], teacher["pin"]):
-            return jsonify({"message": "Bienvenido "+teacher["name"]+" "+teacher["firstSurname"]+" "+teacher["secondSurname"]})
+            jwtIdentity = teacher["rfc"]
+            access_token = create_access_token(identity = jwtIdentity, expires_delta=td(hours=1))
+            refresh_token = create_refresh_token(identity = jwtIdentity)
+            return jsonify({"data": {
+                'message': 'Logged in as {}'.format(teacher["name"]),
+                'access_token': access_token,
+                'refresh_token': refresh_token
+            }})
         else:
             return jsonify({"message": "NIP incorrecto"})
     except Teacher.DoesNotExist:
@@ -40,7 +49,7 @@ def courses():
             state = data["state"],
             serial = data["serial"]
         ).save()
-        return jsonify({"message": "Curso guardado con exito."})
+        return jsonify({"message": "Curso guardado."})
 
 @app.route('/course/<id>', methods=['GET', 'PUT', 'DELETE'])
 def course(id):
@@ -88,8 +97,9 @@ def teachers():
         return jsonify(data)
 
 @app.route('/teacher/<id>', methods=['GET', 'PUT', 'DELETE'])
+@jwt_required
 def teacher(id):
-    pass
+    return jsonify({"message": "si pull"})
 
 @app.route('/certificate_view/<id>', methods=['GET'])
 def certificate_view(id):

@@ -1,6 +1,6 @@
 from marshmallow_mongoengine import ModelSchema
 from flask_marshmallow import Marshmallow
-from models import Course, Teacher, Letterhead
+from models import Course, Teacher, LetterheadMetaData
 from app import app
 
 marsh = Marshmallow(app)
@@ -15,7 +15,7 @@ class TeacherSchema(ModelSchema):
 
 class LetterheadSchema(ModelSchema):
     class Meta:
-        model = Letterhead
+        model = LetterheadMetaData
 
 courseSchema = CourseSchema()
 courseSchemas = CourseSchema(many=True)
