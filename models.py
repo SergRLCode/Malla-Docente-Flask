@@ -53,22 +53,8 @@ class Teacher(db.Document):
     numberPhone = db.StringField()
     email = db.StringField()
     studyLevel = db.StringField()
-    studyType= db.StringField()
+    speciality = db.StringField()
     degree = db.StringField()
-    def encode_auth_token(self, user_id):
-        try:
-            payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=5),
-                'iat': datetime.datetime.utcnow(),
-                'sub': user_id
-            }
-            return jwt.encode(
-                payload,
-                app.config.get('SECRET_KEY'),
-                algorithm='HS256'
-            )
-        except Exception as e:
-            return e
     
 class LetterheadMetaData(db.Document):
     version = db.IntField()

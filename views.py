@@ -90,7 +90,7 @@ def teachers():
             email = data["email"],
             userType = data["userType"],
             studyLevel = data["studyLevel"],
-            studyType = data["studyType"],
+            speciality = data["speciality"],
             degree = data["degree"],
             pin = sha256.hash(data["pin"])
         ).save()
