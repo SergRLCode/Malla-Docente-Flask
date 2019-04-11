@@ -1,7 +1,6 @@
 from flask_mongoengine import MongoEngine
 from app import db, app
 import datetime
-import jwt
 
 class Course(db.Document):
     Online = 'Virtual'
@@ -67,10 +66,10 @@ class Teacher(db.Document):
     pin = db.StringField()
     
 class LetterheadMetaData(db.Document):
-    version = db.IntField()
-    emitDate = db.StringField()
     nameDocument = db.StringField()
     typeDocument = db.StringField()
+    version = db.IntField()
+    emitDate = db.StringField()
 
 # python3, reserved word "dir", pa ver metodos
 
