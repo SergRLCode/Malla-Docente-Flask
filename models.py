@@ -18,19 +18,23 @@ class Course(db.Document):
         (OnCourse, 'Cursando'),
         (ToStart, 'Por empezar'),
     )
+    # Inscription Data
     courseName = db.StringField(required=True)
     teacherName = db.StringField(required=True)
-    description = db.StringField()
+    modality = db.StringField(choices=modality_choice)
     dateStart = db.DateTimeField()
-    dateEnd = db.DateTimeField()
-    # 2019-04-08 13:21:08.456998 --> formato a ingresar para las fechas
-    totalHours = db.IntField()
+    dateEnd = db.DateTimeField()  # 2019-04-08 13:21:08.456998 --> formato a ingresar para las fechas
     timetable = db.StringField()
     place = db.StringField()
+    # Courses List Data
+    teachersInCourse = db.ListField(db.StringField())
+    description = db.StringField()
+    totalHours = db.IntField()
     courseTo = db.StringField()
-    modality = db.StringField(choices=modality_choice)
-    state = db.StringField(choices=state_choice)
+    # Assistant List Data
     serial = db.IntField()
+    # Other
+    state = db.StringField(choices=state_choice)
 
 class Teacher(db.Document):
     teacher = 'Docente'
@@ -43,18 +47,24 @@ class Teacher(db.Document):
         (communication, 'Comunicacion'),
         (departamentBoss, 'Jefe de departamento'),
     )
+    # Personal Data
     rfc = db.StringField(max_length=13, required=True)
-    pin = db.StringField()
     name = db.StringField()
-    firstSurname = db.StringField()
-    secondSurname = db.StringField()
-    userType = db.StringField(choices=userType_choice)
-    departament = db.StringField()
+    fstSurname = db.StringField()
+    sndSurname = db.StringField()
     numberPhone = db.StringField()
     email = db.StringField()
+    # Academic Studies
     studyLevel = db.StringField()
-    speciality = db.StringField()
     degree = db.StringField()
+    speciality = db.StringField()
+    # Laboral Data
+    departament = db.StringField()
+    schedule = db.StringField()
+    position = db.StringField()
+    # Sesion Data
+    userType = db.StringField(choices=userType_choice)
+    pin = db.StringField()
     
 class LetterheadMetaData(db.Document):
     version = db.IntField()

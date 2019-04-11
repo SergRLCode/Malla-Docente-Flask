@@ -18,7 +18,7 @@ def login_user():
             access_token = create_access_token(identity = jwtIdentity, expires_delta=td(hours=1))
             refresh_token = create_refresh_token(identity = jwtIdentity)
             return jsonify({"data": {
-                'message': 'Logged in as {}'.format(teacher["name"]),
+                'message': 'Logged in as {} {} {}'.format(teacher["name"], teacher["fstSurname"], teacher["sndSurname"]),
                 'access_token': access_token,
                 'refresh_token': refresh_token
             }})
@@ -89,6 +89,7 @@ def teachers():
             numberPhone = data["numberPhone"],
             email = data["email"],
             userType = data["userType"],
+            departament = data["departament"],
             studyLevel = data["studyLevel"],
             speciality = data["speciality"],
             degree = data["degree"],
