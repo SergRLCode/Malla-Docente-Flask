@@ -32,7 +32,7 @@ class Course(db.Document):
     courseTo = db.StringField()
     # Assistant List Data
     serial = db.IntField()
-    # Other
+    # Status
     state = db.StringField(choices=state_choice)
 
 class Teacher(db.Document):
@@ -69,7 +69,7 @@ class LetterheadMetaData(db.Document):
     nameDocument = db.StringField()
     typeDocument = db.StringField()
     version = db.IntField()
-    emitDate = db.StringField()
+    emitDate = db.DateTimeField()
 
 # python3, reserved word "dir", pa ver metodos
 

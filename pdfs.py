@@ -32,8 +32,12 @@ class PageNumCanvas(canvas.Canvas):
         self.setFont("Helvetica", 10)
         self.drawRightString(685, 514, page)
 
-nameDocument = ''
-typeDocument = ''
+metaData = {
+    "nameDocument": "",
+    "typeDocument": "",
+    "version": "",
+    "emitDate": ""
+}
 def membretado(design, doc):
     styles = getSampleStyleSheet()
     styleN = styles['Normal']
@@ -42,8 +46,8 @@ def membretado(design, doc):
     styleN.alignment = TA_CENTER
     logoTec = Image('logotec.jpg', 77, 42) # 101, 56
     tableHeaderContent = [
-        [logoTec, typeDocument, 'Versión:', '0'],
-        ['', Paragraph(nameDocument, styleN), 'Fecha emisión:', '12/02/1990'],
+        [logoTec, metaData["typeDocument"], 'Versión:', metaData["version"]],
+        ['', Paragraph(metaData["nameDocument"], styleN), 'Fecha emisión:', metaData["emitDate"]],
         ['', '', 'Página:', '']
     ]
     tableHeader = Table(tableHeaderContent, style=[
@@ -57,12 +61,22 @@ def membretado(design, doc):
     tableHeader.wrapOn(design, 0, 0)
     tableHeader.drawOn(design, 85, 510) 
 
+def getMetaData(pk):
+    documentInfo = LetterheadMetaData.objects.get(pk = pk)
+    global metaData
+    for value in metaData:
+        if(value=="emitDate"):
+            metaData[value] = "{}/{}/{}".format(documentInfo[value].day, documentInfo[value].month, documentInfo[value].year)
+        else:
+            metaData[value] = documentInfo[value]
+
 def returnPDF():
-    pass
+    output = BytesIO()
+    doc = SimpleDocTemplate(output, pagesize = landscape(letter), topMargin=105, bottomMargin=50)
 
 def assistantList(teachers, course):
     output = BytesIO()
-    doc = SimpleDocTemplate(output, pagesize = landscape(letter), topMargin=105)
+    doc = SimpleDocTemplate(output, pagesize = landscape(letter), topMargin=105, bottomMargin=50)
     styles = getSampleStyleSheet()
     styleN = styles['Normal']
     styleN.fontSize = 8
@@ -70,10 +84,7 @@ def assistantList(teachers, course):
     styleN.alignment = TA_CENTER
     styleH2 = styles['Heading2']
     styleH2.alignment = TA_CENTER
-    global nameDocument 
-    global typeDocument
-    typeDocument = 'REGISTRO'
-    nameDocument = 'LISTA DE ASISTENCIA'
+    getMetaData("5cb0c0beab661b261edfea32")
     tableTitleList = [
         [Paragraph("LISTA DE ASISTENCIA", styleH2)]
     ]
@@ -143,13 +154,13 @@ def assistantList(teachers, course):
     pdf_out = output.getvalue()
     output.close()
     response = make_response(pdf_out)
-    response.headers['Content-Disposition'] = "attachment; filename=" + title + ".pdf"
+    response.headers['Content-Disposition'] = "attachment; filename={}.pdf".format(title)
     response.headers['Content-Type'] = 'application/pdf'
     return response
 
 def coursesList(courses):
     output = BytesIO()
-    doc = SimpleDocTemplate(output,pagesize = landscape(letter), topMargin=105, bottomMargin=50)
+    doc = SimpleDocTemplate(output, pagesize = landscape(letter), topMargin=105, bottomMargin=50)
     styles = getSampleStyleSheet()
     styleN = styles['Normal']
     styleN.fontSize = 8
@@ -157,10 +168,7 @@ def coursesList(courses):
     styleN.alignment = TA_CENTER
     styleH2 = styles['Heading2']
     styleH2.alignment = TA_CENTER
-    global nameDocument
-    global typeDocument
-    typeDocument = 'FORMATO' 
-    nameDocument = 'PROGRAMA INSTITUCIONAL DE FORMACION Y ACTUALIZACION DOCENTE Y PROFESIONAL'
+    getMetaData("5cb0b321ab661b1fea0178be")
     tableTitleList = [
         [Paragraph("PERIODO JUNIO - AGOSTO 2018", styleH2)]
     ]

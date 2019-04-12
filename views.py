@@ -3,7 +3,7 @@ from flask import jsonify, request, make_response
 from passlib.hash import pbkdf2_sha256 as sha256
 from datetime import datetime as dt, timedelta as td
 from reportlab.pdfgen import canvas
-from models import Course, Teacher
+from models import Course, Teacher, LetterheadMetaData
 from app import app
 from marsh import *
 from pdfs import *
@@ -26,6 +26,10 @@ def login_user():
             return jsonify({"message": "NIP incorrecto"})
     except Teacher.DoesNotExist:
         return jsonify({"message": "Docente no registrado"})
+
+@app.route('/logout', methods=['GET'])
+def logout_user():
+    pass
 
 @app.route('/courses', methods=['GET', 'POST'])
 def courses():
@@ -74,6 +78,22 @@ def course(id):
         course.delete()
         return jsonify({"message":advice})
 
+@app.route('/course/<course_id>/assistantList', methods=['GET'])
+def assistantList_view(course_id):
+    try:
+        course = Course.objects.get(pk=course_id)
+    except Course.DoesNotExist:
+        return jsonify({"message": "Curso inexistente"})
+    all_teachers = Teacher.objects.all()
+    teachers = []
+    for teacher in all_teachers:
+        teachers.append([
+            teacher["name"] + ' ' + teacher["firstSurname"] + ' ' + teacher["secondSurname"],
+            teacher["rfc"],
+            teacher["studyType"]]
+        )
+    return assistantList(teachers, course)
+
 @app.route('/teachers', methods=['GET', 'POST'])
 def teachers():
     if (request.method == 'GET'):
@@ -97,6 +117,21 @@ def teachers():
         ).save()
         return jsonify(data)
 
+@app.route('/addInfo', methods=['GET', 'POST'])
+def addinfoView():
+    if(request.method == 'GET'):
+        info = LetterheadMetaData.objects.all()
+        return jsonify(info)
+    elif(request.method == 'POST'):
+        data = request.get_json()
+        LetterheadMetaData(
+            nameDocument = data['nameDocument'],
+            typeDocument = data['typeDocument'],
+            version = data['version'],
+            emitDate = data['emitDate']
+        ).save()
+        return jsonify({"message": "tornado of souls"})
+
 @app.route('/teacher/<id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required
 def teacher(id):
@@ -111,21 +146,7 @@ def certificate_view(id):
     if (request.method == 'GET'):
         return certificate(teacher)
 
-@app.route('/course/<course_id>/assistantList_view', methods=['GET'])
-def assistantList_view(course_id):
-    try:
-        course = Course.objects.get(pk=course_id)
-    except Course.DoesNotExist:
-        return jsonify({"message": "Curso inexistente"})
-    all_teachers = Teacher.objects.all()
-    teachers = []
-    for teacher in all_teachers:
-        teachers.append([
-            teacher["name"] + ' ' + teacher["firstSurname"] + ' ' + teacher["secondSurname"],
-            teacher["rfc"],
-            teacher["studyType"]]
-        )
-    return assistantList(teachers, course)
+
 
 @app.route('/courses/coursesList', methods=['GET'])
 def coursesList_view():
