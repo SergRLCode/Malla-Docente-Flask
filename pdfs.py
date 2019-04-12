@@ -13,6 +13,22 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from io import StringIO, BytesIO
 
+# Global variables to style
+styles = getSampleStyleSheet()
+styleN = styles['Normal']
+styleN.fontSize = 8
+styleN.leading = 10
+styleN.alignment = TA_CENTER
+styleH2 = styles['Heading2']
+styleH2.alignment = TA_CENTER
+# Dict for metadata to letterhead
+metaData = {
+    "nameDocument": "",
+    "typeDocument": "",
+    "version": "",
+    "emitDate": ""
+}
+
 class PageNumCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         canvas.Canvas.__init__(self, *args, **kwargs)
@@ -32,18 +48,7 @@ class PageNumCanvas(canvas.Canvas):
         self.setFont("Helvetica", 10)
         self.drawRightString(685, 514, page)
 
-metaData = {
-    "nameDocument": "",
-    "typeDocument": "",
-    "version": "",
-    "emitDate": ""
-}
-def membretado(design, doc):
-    styles = getSampleStyleSheet()
-    styleN = styles['Normal']
-    styleN.fontSize = 8
-    styleN.leading = 10
-    styleN.alignment = TA_CENTER
+def letterhead(design, doc):
     logoTec = Image('logotec.jpg', 77, 42) # 101, 56
     tableHeaderContent = [
         [logoTec, metaData["typeDocument"], 'Versión:', metaData["version"]],
@@ -66,24 +71,26 @@ def getMetaData(pk):
     global metaData
     for value in metaData:
         if(value=="emitDate"):
-            metaData[value] = "{}/{}/{}".format(documentInfo[value].day, documentInfo[value].month, documentInfo[value].year)
+            if documentInfo[value].month < 10:
+                month = "0{}".format(documentInfo[value].month)
+                metaData[value] = "{}/{}/{}".format(documentInfo[value].day, month, documentInfo[value].year)
+            else:
+                metaData[value] = "{}/{}/{}".format(documentInfo[value].day, documentInfo[value].month, documentInfo[value].year)
         else:
             metaData[value] = documentInfo[value]
 
-def returnPDF():
+def returnPDF(story, name):
     output = BytesIO()
     doc = SimpleDocTemplate(output, pagesize = landscape(letter), topMargin=105, bottomMargin=50)
+    doc.build(story, canvasmaker=PageNumCanvas, onFirstPage=letterhead, onLaterPages=letterhead)
+    pdf_out = output.getvalue()
+    output.close()
+    response = make_response(pdf_out)
+    response.headers['Content-Disposition'] = "attachment; filename={}.pdf".format(name)
+    response.headers['Content-Type'] = 'application/pdf'
+    return response
 
 def assistantList(teachers, course):
-    output = BytesIO()
-    doc = SimpleDocTemplate(output, pagesize = landscape(letter), topMargin=105, bottomMargin=50)
-    styles = getSampleStyleSheet()
-    styleN = styles['Normal']
-    styleN.fontSize = 8
-    styleN.leading = 10
-    styleN.alignment = TA_CENTER
-    styleH2 = styles['Heading2']
-    styleH2.alignment = TA_CENTER
     getMetaData("5cb0c0beab661b261edfea32")
     tableTitleList = [
         [Paragraph("LISTA DE ASISTENCIA", styleH2)]
@@ -142,32 +149,15 @@ def assistantList(teachers, course):
         ('SPAN', (0,0), (0, 2)),
         ('FONTSIZE', (0, 0), (-1, -1), 8)
     ], colWidths=(16, 170, 120, 170, 80, 16, 16, 16, 16, 16), rowHeights= 11)
-    # Preguntar sobre los datos del curso a la maestra Claudia
     title = course["courseName"].replace(" ", "")
     story = []
     story.append(tableTitle)
     story.append(tableDataCourse)
     story.append(Spacer(1,inch/5))
     story.append(tableDataTeacher)
-    # Agrega todo el contenido al documento 
-    doc.build(story, canvasmaker=PageNumCanvas, onFirstPage=membretado, onLaterPages=membretado)
-    pdf_out = output.getvalue()
-    output.close()
-    response = make_response(pdf_out)
-    response.headers['Content-Disposition'] = "attachment; filename={}.pdf".format(title)
-    response.headers['Content-Type'] = 'application/pdf'
-    return response
-
+    return returnPDF(story, title)
+    
 def coursesList(courses):
-    output = BytesIO()
-    doc = SimpleDocTemplate(output, pagesize = landscape(letter), topMargin=105, bottomMargin=50)
-    styles = getSampleStyleSheet()
-    styleN = styles['Normal']
-    styleN.fontSize = 8
-    styleN.leading = 10
-    styleN.alignment = TA_CENTER
-    styleH2 = styles['Heading2']
-    styleH2.alignment = TA_CENTER
     getMetaData("5cb0b321ab661b1fea0178be")
     tableTitleList = [
         [Paragraph("PERIODO JUNIO - AGOSTO 2018", styleH2)]
@@ -203,10 +193,4 @@ def coursesList(courses):
     story.append(tableCourses)
     story.append(Spacer(1,inch/4))
     story.append(KeepTogether(tableSigns))
-    doc.build(story, canvasmaker=PageNumCanvas, onFirstPage=membretado, onLaterPages=membretado)
-    pdf_out = output.getvalue()
-    output.close()
-    response = make_response(pdf_out)
-    response.headers['Content-Disposition'] = "attachment; filename=ListaDeCursos.pdf"
-    response.headers['Content-Type'] = 'application/pdf'
-    return response
+    return returnPDF(story, "ListaDeCursos")
