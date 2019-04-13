@@ -21,6 +21,8 @@ styleN.leading = 10
 styleN.alignment = TA_CENTER
 styleH2 = styles['Heading2']
 styleH2.alignment = TA_CENTER
+# Global variables for letterhead position
+x = y = 0
 # Dict for metadata to letterhead
 metaData = {
     "nameDocument": "",
@@ -64,7 +66,7 @@ def letterhead(design, doc):
         ('SPAN', (1,1), (1, 2))
     ], colWidths=(90, 370, 90, 72), rowHeights=14)
     tableHeader.wrapOn(design, 0, 0)
-    tableHeader.drawOn(design, 85, 510) 
+    tableHeader.drawOn(design, x, y)
 
 def getMetaData(pk):
     documentInfo = LetterheadMetaData.objects.get(pk = pk)
@@ -79,9 +81,9 @@ def getMetaData(pk):
         else:
             metaData[value] = documentInfo[value]
 
-def returnPDF(story, name):
+def returnPDF(story, name, size):
     output = BytesIO()
-    doc = SimpleDocTemplate(output, pagesize = landscape(letter), topMargin=105, bottomMargin=50)
+    doc = SimpleDocTemplate(output, pagesize = size, topMargin=105, bottomMargin=50)
     doc.build(story, canvasmaker=PageNumCanvas, onFirstPage=letterhead, onLaterPages=letterhead)
     pdf_out = output.getvalue()
     output.close()
@@ -89,8 +91,10 @@ def returnPDF(story, name):
     response.headers['Content-Disposition'] = "attachment; filename={}.pdf".format(name)
     response.headers['Content-Type'] = 'application/pdf'
     return response
-
+# --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <--
 def assistantList(teachers, course):
+    x = 85
+    y = 510
     getMetaData("5cb0c0beab661b261edfea32")
     tableTitleList = [
         [Paragraph("LISTA DE ASISTENCIA", styleH2)]
@@ -155,9 +159,11 @@ def assistantList(teachers, course):
     story.append(tableDataCourse)
     story.append(Spacer(1,inch/5))
     story.append(tableDataTeacher)
-    return returnPDF(story, title)
+    return returnPDF(story, title, landscape(letter))
     
 def coursesList(courses):
+    x = 85
+    y = 510
     getMetaData("5cb0b321ab661b1fea0178be")
     tableTitleList = [
         [Paragraph("PERIODO JUNIO - AGOSTO 2018", styleH2)]
@@ -193,4 +199,16 @@ def coursesList(courses):
     story.append(tableCourses)
     story.append(Spacer(1,inch/4))
     story.append(KeepTogether(tableSigns))
-    return returnPDF(story, "ListaDeCursos")
+    x = 85
+    y = 510
+    return returnPDF(story, "ListaDeCursos", landscape(letter))
+
+def inscription():
+    getMetaData("5cb0c16bab661b27708563a7")
+    tableTitleList = [
+        [Paragraph("Cédula de Inscripción".upper(), styleH2)]
+    ]
+    tableTitle = Table(tableTitleList)
+    story = []
+    story.append(tableTitle)
+    return returnPDF(story, "cedula", letter)

@@ -31,6 +31,10 @@ def login_user():
 def logout_user():
     pass
 
+@app.route('/inscriptionDocument', methods=['GET'])
+def getInscriptionDocument():
+    return inscription()
+
 @app.route('/courses', methods=['GET', 'POST'])
 def courses():
     if (request.method == 'GET'):
