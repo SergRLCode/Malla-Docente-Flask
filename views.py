@@ -1,12 +1,12 @@
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
+from models import Course, Teacher, LetterheadMetaData, Departament
+from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
 from passlib.hash import pbkdf2_sha256 as sha256
-from datetime import datetime as dt, timedelta as td
 from reportlab.pdfgen import canvas
-from models import Course, Teacher, LetterheadMetaData
 from app import app
 from marsh import *
-from pdfs import *
+from pdfs import assistantList, coursesList, inscription
 
 @app.route('/login', methods=['POST'])
 def login_user():
@@ -43,22 +43,27 @@ def courses():
         return jsonify(data)
     elif (request.method == 'POST'):
         data = request.get_json()
-        Course(
-            courseName = data["courseName"],
-            teacherName = data["teacherName"],
-            description = data["description"],
-            dateStart = data["dateStart"],
-            dateEnd = data["dateEnd"],
-            totalHours = data["totalHours"],
-            timetable = data["timetable"],
-            place = data["place"],
-            courseTo = data["courseTo"],
-            modality = data["modality"],
-            state = data["state"],
-            serial = data["serial"]
-        ).save()
-        return jsonify({"message": "Curso guardado."})
-
+        all_rfc = Teacher.objects.all().values_list('rfc')
+        if data['teacherRFC'] not in all_rfc:
+            return jsonify({"message": "Error, RFC no valido."})
+        else:
+            Course(
+                courseName = data["courseName"],
+                teacherRFC = data["teacherRFC"],
+                modality = data["modality"],
+                dateStart = data["dateStart"],
+                dateEnd = data["dateEnd"],
+                timetable = data["timetable"],
+                place = data["place"],
+                teachersInCourse = data["teachersInCourse"],
+                description = data["description"],
+                totalHours = data["totalHours"],
+                courseTo = data["courseTo"],
+                serial = data["serial"],
+                state = data["state"]
+            ).save()         
+            return jsonify({"message": "Curso guardado."})
+# Seguir modificando Modelo
 @app.route('/course/<id>', methods=['GET', 'PUT', 'DELETE'])
 def course(id):
     try:
@@ -78,7 +83,7 @@ def course(id):
         return jsonify(data)
     elif (request.method == 'DELETE'):
         deleted = course.name
-        advice = "Curso " + str(deleted) + " eliminado"
+        advice = "Curso {} eliminado".format(deleted)
         course.delete()
         return jsonify({"message":advice})
 
@@ -88,15 +93,55 @@ def assistantList_view(course_id):
         course = Course.objects.get(pk=course_id)
     except Course.DoesNotExist:
         return jsonify({"message": "Curso inexistente"})
-    all_teachers = Teacher.objects.all()
+    courseTeacher = Teacher.objects.get(rfc=course['teacherRFC'])
+    courseTeacherData = [
+        "{} {} {}".format(courseTeacher["name"], courseTeacher["fstSurname"], courseTeacher["sndSurname"]),
+        courseTeacher["rfc"]
+    ]
+    teachersinCourse = Teacher.objects.filter(rfc__ne=course['teacherRFC'])
     teachers = []
-    for teacher in all_teachers:
-        teachers.append([
-            teacher["name"] + ' ' + teacher["firstSurname"] + ' ' + teacher["secondSurname"],
-            teacher["rfc"],
-            teacher["studyType"]]
+    for teacher in teachersinCourse:
+        if(teacher["rfc"] in course['teachersInCourse']):
+            teachers.append([
+                "{} {} {}".format(teacher["name"], teacher["fstSurname"], teacher["sndSurname"]),
+                teacher["rfc"],
+                teacher["departament"]]
         )
-    return assistantList(teachers, course)
+    return assistantList(teachers, courseTeacherData, course)
+
+@app.route('/addTeacherinCourse/<course_id>', methods=['POST'])
+def addTeacherinCourse_view(course_id):
+    if(request.method == 'POST'):
+        data = request.get_json()
+        try:
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            return jsonify({"message": "Curso inexistente"})
+        all_rfc = Teacher.objects.all().values_list('rfc')
+        if(data['rfc'] not in all_rfc):
+            return jsonify({'message': 'RFC inexistente.'})
+        else:
+            if(data['rfc'] in course['teachersInCourse']):
+                return jsonify({"message": "Docente agregado previamente."})
+            else:
+                course['teachersInCourse'].append(data['rfc'])
+                course.save()
+                return jsonify({'message': 'Docente agregado con exito.'})
+
+@app.route('/removeTeacherinCourse/<course_id>', methods=['POST'])
+def removeTeacherinCourse_view(course_id):
+    if(request.method == 'POST'):
+        data = request.get_json()
+        try:
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            return jsonify({"message": "Curso inexistente"})
+        if(data['rfc'] in course['teachersInCourse']):
+            course['teachersInCourse'].remove(data['rfc'])
+            course.save()
+            return jsonify({"message": "Docente dado de baja exitosamente"})
+        else:
+            return jsonify({"message": "No existe en la lista"})
 
 @app.route('/teachers', methods=['GET', 'POST'])
 def teachers():
@@ -108,19 +153,22 @@ def teachers():
         Teacher(
             rfc = data["rfc"],
             name = data["name"],
-            firstSurname = data["firstSurname"],
-            secondSurname = data["secondSurname"],
+            fstSurname = data["fstSurname"],
+            sndSurname = data["sndSurname"],
             numberPhone = data["numberPhone"],
             email = data["email"],
-            userType = data["userType"],
-            departament = data["departament"],
             studyLevel = data["studyLevel"],
-            speciality = data["speciality"],
             degree = data["degree"],
+            speciality = data["speciality"],
+            departament = data["departament"],
+            schedule = data["schedule"],
+            position = data["position"],
+            userType = data["userType"],
             pin = sha256.hash(data["pin"])
         ).save()
         return jsonify(data)
 
+# Only works to add meta data for each letterhead, next change will update meta data
 @app.route('/addInfo', methods=['GET', 'POST'])
 def addinfoView():
     if(request.method == 'GET'):
@@ -136,6 +184,21 @@ def addinfoView():
         ).save()
         return jsonify({"message": "tornado of souls"})
 
+# Only works to add departament info for each letterhead, next change will update departament info
+@app.route('/addDepartament', methods=['GET', 'POST'])
+def adddepaView():
+    if(request.method == 'GET'):
+        info = Departament.objects.all()
+        return jsonify(info)
+    elif(request.method == 'POST'):
+        data = request.get_json()
+        Departament(
+            name = data["name"],
+            boss = data["boss"]
+        ).save()
+        return jsonify({"message": "san sebastian"})
+
+# Example of route with JWT 
 @app.route('/teacher/<id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required
 def teacher(id):
@@ -148,9 +211,7 @@ def certificate_view(id):
     except Teacher.DoesNotExist:
         return jsonify({"message": "Don't exists"})
     if (request.method == 'GET'):
-        return certificate(teacher)
-
-
+        return "hola"
 
 @app.route('/courses/coursesList', methods=['GET'])
 def coursesList_view():
@@ -158,13 +219,14 @@ def coursesList_view():
     courses = []
     months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
     for course in all_courses:
+        teacherName = Teacher.objects.filter(rfc=course["teacherRFC"]).values_list("name", "fstSurname", "sndSurname")
         courses.append([
             course["courseName"],
             course["description"],
-            str(course["dateStart"].day)+"-"+str(course["dateEnd"].day)+" de "+months[course["dateStart"].month-1]+" del "+str(course["dateStart"].year),
+            "{}-{} de {} del {}".format(course["dateStart"].day, course["dateEnd"].day, months[course["dateStart"].month-1], course["dateStart"].year),
             course["place"],
-            str(course["totalHours"])+" hrs.",
-            course["teacherName"],
+            "{} hrs.".format(course["totalHours"]),
+            "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]),
             course["courseTo"]
         ])
     return coursesList(courses)

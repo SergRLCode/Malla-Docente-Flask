@@ -21,9 +21,7 @@ styleN.leading = 10
 styleN.alignment = TA_CENTER
 styleH2 = styles['Heading2']
 styleH2.alignment = TA_CENTER
-# Global variables for letterhead position
-x = y = 0
-# Dict for metadata to letterhead
+# Dict for metadata to landscapeLetterhead
 metaData = {
     "nameDocument": "",
     "typeDocument": "",
@@ -50,7 +48,20 @@ class PageNumCanvas(canvas.Canvas):
         self.setFont("Helvetica", 10)
         self.drawRightString(685, 514, page)
 
-def letterhead(design, doc):
+def getMetaData(pk):
+    documentInfo = LetterheadMetaData.objects.get(pk = pk)
+    global metaData
+    for value in metaData:
+        if(value=="emitDate"):
+            if documentInfo[value].month < 10:
+                month = "0{}".format(documentInfo[value].month)
+                metaData[value] = "{}/{}/{}".format(documentInfo[value].day, month, documentInfo[value].year)
+            else:
+                metaData[value] = "{}/{}/{}".format(documentInfo[value].day, documentInfo[value].month, documentInfo[value].year)
+        else:
+            metaData[value] = documentInfo[value]
+
+def landscapeLetterhead(design, doc):
     logoTec = Image('logotec.jpg', 77, 42) # 101, 56
     tableHeaderContent = [
         [logoTec, metaData["typeDocument"], 'Versión:', metaData["version"]],
@@ -66,25 +77,33 @@ def letterhead(design, doc):
         ('SPAN', (1,1), (1, 2))
     ], colWidths=(90, 370, 90, 72), rowHeights=14)
     tableHeader.wrapOn(design, 0, 0)
-    tableHeader.drawOn(design, x, y)
+    tableHeader.drawOn(design, 85, 510)
 
-def getMetaData(pk):
-    documentInfo = LetterheadMetaData.objects.get(pk = pk)
-    global metaData
-    for value in metaData:
-        if(value=="emitDate"):
-            if documentInfo[value].month < 10:
-                month = "0{}".format(documentInfo[value].month)
-                metaData[value] = "{}/{}/{}".format(documentInfo[value].day, month, documentInfo[value].year)
-            else:
-                metaData[value] = "{}/{}/{}".format(documentInfo[value].day, documentInfo[value].month, documentInfo[value].year)
-        else:
-            metaData[value] = documentInfo[value]
+def portraitLetterhead(design, doc):
+    logoTec = Image('logotec.jpg', 77, 42) # 101, 56
+    tableHeaderContent = [
+        [logoTec, metaData["typeDocument"], 'Versión:', metaData["version"]],
+        ['', Paragraph(metaData["nameDocument"], styleN), 'Fecha emisión:', metaData["emitDate"]],
+        ['', '', 'Página:', '1 de 1']
+    ]
+    tableHeader = Table(tableHeaderContent, style=[
+        ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
+        ('ALIGN',(0, 0), (1, 2),'CENTER'),
+        ('ALIGN',(3, 0), (3, 2),'CENTER'),
+        ('GRID', (0,0), (3, 2), 0.5, colors.black),
+        ('SPAN', (0,0), (0,2)),
+        ('SPAN', (1,1), (1, 2))
+    ], colWidths=(90, 270, 90, 72), rowHeights=14)
+    tableHeader.wrapOn(design, 0, 0)
+    tableHeader.drawOn(design, 45, 710)
 
-def returnPDF(story, name, size):
+def returnPDF(story, name, size, top):
     output = BytesIO()
-    doc = SimpleDocTemplate(output, pagesize = size, topMargin=105, bottomMargin=50)
-    doc.build(story, canvasmaker=PageNumCanvas, onFirstPage=letterhead, onLaterPages=letterhead)
+    doc = SimpleDocTemplate(output, pagesize = size, topMargin=top, bottomMargin=50)
+    if(size==letter):
+        doc.build(story, canvasmaker=PageNumCanvas, onFirstPage=portraitLetterhead, onLaterPages=portraitLetterhead)
+    elif(size==landscape(letter)):
+        doc.build(story, canvasmaker=PageNumCanvas, onFirstPage=landscapeLetterhead, onLaterPages=landscapeLetterhead)
     pdf_out = output.getvalue()
     output.close()
     response = make_response(pdf_out)
@@ -92,9 +111,7 @@ def returnPDF(story, name, size):
     response.headers['Content-Type'] = 'application/pdf'
     return response
 # --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <--
-def assistantList(teachers, course):
-    x = 85
-    y = 510
+def assistantList(teachers, courseTeacher, course):
     getMetaData("5cb0c0beab661b261edfea32")
     tableTitleList = [
         [Paragraph("LISTA DE ASISTENCIA", styleH2)]
@@ -110,16 +127,16 @@ def assistantList(teachers, course):
     months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
     tableDataCourseList = [        
         ['', '', '', '', 'FOLIO:', course["serial"]],
-        ['NOMBRE DEL EVENTO:', course["courseName"], '', '', '', ''],
-        ['NOMBRE DEL INSTRUCTOR:', course["teacherName"], 'DURACION:', str(course["totalHours"])+ " Hrs.", 'HORARIO:', course["timetable"]],
-        ['PERIODO: ', 'Del ' + str(course["dateStart"].day) + ' al ' + str(course["dateEnd"].day) + ' de ' + months[course["dateStart"].month-1] + ' del ' + str(course["dateEnd"].year), 'SEDE: ', course["place"], '', ''],
-        ['MODALIDAD: ', 'PRESENCIAL(' + presential + ')', 'VIRTUAL(' + virtual + ')', '', '', '']
+        ['NOMBRE DEL EVENTO:', course["courseName"]],
+        ['NOMBRE DEL INSTRUCTOR:', courseTeacher[0], 'DURACION:', str(course["totalHours"])+ " Hrs.", 'HORARIO:', course["timetable"]],
+        ['PERIODO: ', 'Del ' + str(course["dateStart"].day) + ' al ' + str(course["dateEnd"].day) + ' de ' + months[course["dateStart"].month-1] + ' del ' + str(course["dateEnd"].year), 'SEDE: ', course["place"]],
+        ['MODALIDAD: ', 'PRESENCIAL(' + presential + ')', 'VIRTUAL(' + virtual + ')']
     ]
     arrayDays = []
     for x in range(course["dateStart"].day, course["dateEnd"].day+1):
         arrayDays.append(x)
     tableDataTeacherList = [
-        ['No.', 'NOMBRE DEL PARTICIPANTE', 'R.F.C.', 'DEPARTAMENTO ACADÉMICO', Paragraph('CUMPLIMIENTO DE ACTIVIDADES', styleN), 'ASISTENCIA', '', '', '', ''],
+        ['No.', 'NOMBRE DEL PARTICIPANTE', 'R.F.C.', 'DEPARTAMENTO ACADÉMICO', Paragraph('CUMPLIMIENTO DE ACTIVIDADES', styleN), 'ASISTENCIA'],
         ['', '', '', '', '', 'L', 'M', 'M', 'J', 'V'],
         ['', '', '', '', '%', arrayDays[0], arrayDays[1], arrayDays[2], arrayDays[3], arrayDays[4]]
     ]
@@ -127,6 +144,12 @@ def assistantList(teachers, course):
         tableDataTeacherList.append([
             str(x+1), teachers[x][0], teachers[x][1], teachers[x][2], '', '', '', '', '', ''
         ])
+    tableSignsList = [
+        [Paragraph(courseTeacher[0].upper(), styleN), Paragraph('ME. CLAUDIA CRUZ NAVARRO', styleN)],
+        [Paragraph("NOMBRE Y FIRMA DEL INSTRUCTOR", styleN), Paragraph("NOMBRE Y FIRMA DEL COORDINADOR", styleN)],
+        [Paragraph("R.F.C.: {}".format(courseTeacher[1]), styleN)],
+        [Paragraph("C.U.R.P.: campoSinAgregarxd", styleN)]
+    ]
     tableTitle = Table(tableTitleList)
     tableDataCourse = Table(tableDataCourseList, style=[
             ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
@@ -153,17 +176,21 @@ def assistantList(teachers, course):
         ('SPAN', (0,0), (0, 2)),
         ('FONTSIZE', (0, 0), (-1, -1), 8)
     ], colWidths=(16, 170, 120, 170, 80, 16, 16, 16, 16, 16), rowHeights= 11)
+    tableSigns = Table(tableSignsList, style=[
+        ('LINEBELOW', (0,0), (-1,0), 1, colors.black),
+        ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
+    ], colWidths=180, rowHeights=10)
     title = course["courseName"].replace(" ", "")
     story = []
     story.append(tableTitle)
     story.append(tableDataCourse)
     story.append(Spacer(1,inch/5))
     story.append(tableDataTeacher)
-    return returnPDF(story, title, landscape(letter))
+    story.append(Spacer(1,inch*3/4))
+    story.append(KeepTogether(tableSigns))
+    return returnPDF(story, title, landscape(letter), 105)
     
 def coursesList(courses):
-    x = 85
-    y = 510
     getMetaData("5cb0b321ab661b1fea0178be")
     tableTitleList = [
         [Paragraph("PERIODO JUNIO - AGOSTO 2018", styleH2)]
@@ -199,9 +226,7 @@ def coursesList(courses):
     story.append(tableCourses)
     story.append(Spacer(1,inch/4))
     story.append(KeepTogether(tableSigns))
-    x = 85
-    y = 510
-    return returnPDF(story, "ListaDeCursos", landscape(letter))
+    return returnPDF(story, "ListaDeCursos", landscape(letter), 105)
 
 def inscription():
     getMetaData("5cb0c16bab661b27708563a7")
@@ -211,4 +236,4 @@ def inscription():
     tableTitle = Table(tableTitleList)
     story = []
     story.append(tableTitle)
-    return returnPDF(story, "cedula", letter)
+    return returnPDF(story, "cedula", letter, 85)

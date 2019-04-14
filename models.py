@@ -19,7 +19,7 @@ class Course(db.Document):
     )
     # Inscription Data
     courseName = db.StringField(required=True)
-    teacherName = db.StringField(required=True)
+    teacherRFC = db.StringField(required=True)
     modality = db.StringField(choices=modality_choice)
     dateStart = db.DateTimeField()
     dateEnd = db.DateTimeField()  # 2019-04-08 13:21:08.456998 --> formato a ingresar para las fechas
@@ -46,6 +46,14 @@ class Teacher(db.Document):
         (communication, 'Comunicacion'),
         (departamentBoss, 'Jefe de departamento'),
     )
+    departament_choice = (
+        ("Ciencias Básicas", "Ciencias Básicas"),
+        ("Desarrollo Academico", "Desarrollo Academico"),
+        ("Economico Administrativo", "Economico Administrativo"),
+        ("Ingenierias", "Ingenierias"),
+        ("Industrial", "Industrial"),
+        ("Sistemas y Computacion", "Sistemas y Computacion")
+    )
     # Personal Data
     rfc = db.StringField(max_length=13, required=True)
     name = db.StringField()
@@ -58,13 +66,17 @@ class Teacher(db.Document):
     degree = db.StringField()
     speciality = db.StringField()
     # Laboral Data
-    departament = db.StringField()
+    departament = db.StringField(choices=departament_choice)
     schedule = db.StringField()
     position = db.StringField()
     # Sesion Data
     userType = db.StringField(choices=userType_choice)
     pin = db.StringField()
     
+class Departament(db.Document):
+    name = db.StringField()
+    boss = db.StringField()
+
 class LetterheadMetaData(db.Document):
     nameDocument = db.StringField()
     typeDocument = db.StringField()
