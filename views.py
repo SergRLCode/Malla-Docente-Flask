@@ -101,40 +101,6 @@ def assistantList_view(course_id):
         )
     return assistantList(teachers, courseTeacherData, course)
 
-@app.route('/addTeacherinCourse/<course_id>', methods=['POST'])
-def addTeacherinCourse_view(course_id):
-    if(request.method == 'POST'):
-        data = request.get_json()
-        try:
-            course = Course.objects.get(pk=course_id)
-        except Course.DoesNotExist:
-            return jsonify({"message": "Curso inexistente"})
-        all_rfc = Teacher.objects.all().values_list('rfc')
-        if(data['rfc'] not in all_rfc):
-            return jsonify({'message': 'RFC inexistente.'})
-        else:
-            if(data['rfc'] in course['teachersInCourse']):
-                return jsonify({"message": "Docente agregado previamente."})
-            else:
-                course['teachersInCourse'].append(data['rfc'])
-                course.save()
-                return jsonify({'message': 'Docente agregado con exito.'})
-
-@app.route('/removeTeacherinCourse/<course_id>', methods=['POST'])
-def removeTeacherinCourse_view(course_id):
-    if(request.method == 'POST'):
-        data = request.get_json()
-        try:
-            course = Course.objects.get(pk=course_id)
-        except Course.DoesNotExist:
-            return jsonify({"message": "Curso inexistente"})
-        if(data['rfc'] in course['teachersInCourse']):
-            course['teachersInCourse'].remove(data['rfc'])
-            course.save()
-            return jsonify({"message": "Docente dado de baja exitosamente"})
-        else:
-            return jsonify({"message": "No existe en la lista"})
-
 @app.route('/teachers', methods=['GET', 'POST'])
 def teachers():
     if (request.method == 'GET'):
@@ -201,10 +167,47 @@ def getInscriptionDocument(course_id):
             return jsonify({"message":"error"})
             
 # ==> --> In Develop <-- <==
+
+# NO USES ESTAS RUTAS TODAVIA, ESTAN EN PRUEBA TODAVIA
+# NO USES ESTAS RUTAS TODAVIA, ESTAN EN PRUEBA TODAVIA
+
 @app.route('/logout', methods=['GET'])
 def logout_user():
     pass
 
+@app.route('/addTeacherinCourse/<course_id>', methods=['POST'])
+def addTeacherinCourse_view(course_id):
+    if(request.method == 'POST'):
+        data = request.get_json()
+        try:
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            return jsonify({"message": "Curso inexistente"})
+        all_rfc = Teacher.objects.all().values_list('rfc')
+        if(data['rfc'] not in all_rfc):
+            return jsonify({'message': 'RFC inexistente.'})
+        else:
+            if(data['rfc'] in course['teachersInCourse']):
+                return jsonify({"message": "Docente agregado previamente."})
+            else:
+                course['teachersInCourse'].append(data['rfc'])
+                course.save()
+                return jsonify({'message': 'Docente agregado con exito.'})
+
+@app.route('/removeTeacherinCourse/<course_id>', methods=['POST'])
+def removeTeacherinCourse_view(course_id):
+    if(request.method == 'POST'):
+        data = request.get_json()
+        try:
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            return jsonify({"message": "Curso inexistente"})
+        if(data['rfc'] in course['teachersInCourse']):
+            course['teachersInCourse'].remove(data['rfc'])
+            course.save()
+            return jsonify({"message": "Docente dado de baja exitosamente"})
+        else:
+            return jsonify({"message": "No existe en la lista"})
 
 # Only works to add meta data for each letterhead, next change will update meta data
 @app.route('/addInfo', methods=['GET', 'POST'])
