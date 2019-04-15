@@ -27,14 +27,6 @@ def login_user():
     except Teacher.DoesNotExist:
         return jsonify({"message": "Docente no registrado"})
 
-@app.route('/logout', methods=['GET'])
-def logout_user():
-    pass
-
-@app.route('/inscriptionDocument', methods=['GET'])
-def getInscriptionDocument():
-    return inscription()
-
 @app.route('/courses', methods=['GET', 'POST'])
 def courses():
     if (request.method == 'GET'):
@@ -168,6 +160,33 @@ def teachers():
         ).save()
         return jsonify(data)
 
+@app.route('/courses/coursesList', methods=['GET'])
+def coursesList_view():
+    all_courses = Course.objects.all()
+    courses = []
+    months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    for course in all_courses:
+        teacherName = Teacher.objects.filter(rfc=course["teacherRFC"]).values_list("name", "fstSurname", "sndSurname")
+        courses.append([
+            course["courseName"],
+            course["description"],
+            "{}-{} de {} del {}".format(course["dateStart"].day, course["dateEnd"].day, months[course["dateStart"].month-1], course["dateStart"].year),
+            course["place"],
+            "{} hrs.".format(course["totalHours"]),
+            "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]),
+            course["courseTo"]
+        ])
+    return coursesList(courses)
+    
+# ==> --> In Develop <-- <==
+@app.route('/logout', methods=['GET'])
+def logout_user():
+    pass
+
+@app.route('/inscriptionDocument', methods=['GET'])
+def getInscriptionDocument():
+    return inscription()
+
 # Only works to add meta data for each letterhead, next change will update meta data
 @app.route('/addInfo', methods=['GET', 'POST'])
 def addinfoView():
@@ -212,24 +231,6 @@ def certificate_view(id):
         return jsonify({"message": "Don't exists"})
     if (request.method == 'GET'):
         return "hola"
-
-@app.route('/courses/coursesList', methods=['GET'])
-def coursesList_view():
-    all_courses = Course.objects.all()
-    courses = []
-    months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-    for course in all_courses:
-        teacherName = Teacher.objects.filter(rfc=course["teacherRFC"]).values_list("name", "fstSurname", "sndSurname")
-        courses.append([
-            course["courseName"],
-            course["description"],
-            "{}-{} de {} del {}".format(course["dateStart"].day, course["dateEnd"].day, months[course["dateStart"].month-1], course["dateStart"].year),
-            course["place"],
-            "{} hrs.".format(course["totalHours"]),
-            "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]),
-            course["courseTo"]
-        ])
-    return coursesList(courses)
 
 @app.errorhandler(404)
 def page_not_found(error):
