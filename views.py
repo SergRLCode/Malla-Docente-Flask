@@ -177,15 +177,28 @@ def coursesList_view():
             course["courseTo"]
         ])
     return coursesList(courses)
-    
+
+@app.route('/inscriptionDocument/<course_id>', methods=['POST'])
+def getInscriptionDocument(course_id):
+    if(request.method == 'POST'):
+        data = request.get_json()
+        try:
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            return jsonify({"message": "Curso inexistente"})
+        teacher = Teacher.objects.get(rfc=data['rfc'])
+        departament = Departament.objects.get(name=teacher["departament"])
+        if(teacher['rfc'] in course['teachersInCourse']):
+            teacherWillTeach = Teacher.objects.filter(rfc=course['teacherRFC']).values_list("name", "fstSurname", "sndSurname")
+            return inscription(teacher, departament, course, teacherWillTeach)
+        else:
+            return jsonify({"message":"error"})
+            
 # ==> --> In Develop <-- <==
 @app.route('/logout', methods=['GET'])
 def logout_user():
     pass
 
-@app.route('/inscriptionDocument', methods=['GET'])
-def getInscriptionDocument():
-    return inscription()
 
 # Only works to add meta data for each letterhead, next change will update meta data
 @app.route('/addInfo', methods=['GET', 'POST'])

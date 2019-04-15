@@ -135,14 +135,11 @@ def assistantList(teachers, courseTeacher, course):
     tableTitleList = [
         [set_H2("lista de asistencia")]
     ]
-    presential = ""
-    virtual = ""
+    presential = virtual = " "
     if  course["modality"] == "Presencial":                     
         presential = "X"
-        virtual = " "
     else:
         virtual = "X"
-        presential = " "
     months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
     tableDataCourseList = [        
         ['', '', '', '', 'FOLIO:', course["serial"]],
@@ -247,7 +244,7 @@ def coursesList(courses):
     story.append(KeepTogether(tableSigns))
     return returnPDF(story, "ListaDeCursos", landscape(letter), 105)
 
-def inscription():
+def inscription(teacher, departament, course, teacherWillTeach):
     getMetaData("5cb0c16bab661b27708563a7")
     tableTitleList = [
         [set_H2("Cédula de Inscripción")]
@@ -259,31 +256,47 @@ def inscription():
     ]
     tablePersonalDataList = [
         [set_H1("1. DATOS PERSONALES")],
-        [_set_N('Nombre: '), set_N(""), set_N(""), set_N("")],
+        [_set_N('Nombre: '), set_N(teacher['fstSurname']), set_N(teacher['sndSurname']), set_N(teacher['name'])],
         ["", set_N('Apellido Paterno'), set_N('Apellido Materno'), set_N('Nombre (s)')],
-        [_set_NU('r.f.c.:'), set_N(''), _set_N('Telefono particular:'), set_N('')],
-        [_set_N('Correo electronico:'), set_N('')]
+        [_set_NU('r.f.c.:'), set_N(teacher['rfc']), _set_N('Telefono particular:'), set_N(teacher['numberPhone'])],
+        [_set_N('Correo electronico:'), set_N(teacher['email'])]
     ]
+    lic = maes = dr = otro = otrotxt = ""
+    if(teacher['studyLevel']=='Licenciatura'):
+        lic = 'X'
+    elif(teacher['studyLevel']=='Maestria'):
+        maes = 'X'
+    elif(teacher['studyLevel']=='Doctorado'):
+        dr = 'X'
+    else:
+        otro = 'X'
+        otrotxt = teacher['studyLevel']
     tableStudiesList = [
         [set_H1("2. ESTUDIOS")],
-        [_set_N('Licenciatura'), "", _set_N('Maestría'), "", _set_N('Doctorado'), "", _set_N('Otro'), "", ""],
-        [_set_N('Título en:'), set_N('')]
+        [_set_N('Licenciatura'), lic, _set_N('Maestría'), maes, _set_N('Doctorado'), dr, _set_N('Otro'), otro, set_N(otrotxt)],
+        [_set_N('Título en:'), set_N("{} con especialidad en {}".format(teacher['degree'], teacher['speciality']))]
     ]
     tableLaboralDataList = [
         [set_H1("3. DATOS LABORALES")],
-        [_set_N('Departamento académico:'), ""],
-        [_set_N('Jefe Inmediato:'), ""],
-        [_set_N('Puesto actual:'), ""],
-        [_set_N('Horario:'), ""]
+        [_set_N('Departamento académico:'), set_N(departament["name"])],
+        [_set_N('Jefe Inmediato:'), set_N(departament['boss'])],
+        [_set_N('Puesto actual:'), set_N(teacher['position'])],
+        [_set_N('Horario:'), set_N(teacher['schedule'])]
     ]
+    presential = virtual = " "
+    if course["modality"] == "Presencial":                     
+        presential = "X"
+    else:
+        virtual = "X"
+    months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
     tableCourseDataList = [
         [set_H1('4. DATOS DEL EVENTO')],
-        [_set_N('Nombre del evento:'), ""],
-        [_set_N('Nombre del instructor:'), ""],
-        [_set_N('Modalidad:'), _set_N('Presencial'), "", _set_N('Virtual'), ""],
-        [_set_N('Fecha de realización:'), ""],
-        [_set_N('Horario:'), ""],
-        [_set_N('Sede:'), ""]
+        [_set_N('Nombre del evento:'), set_N(course['courseName'])],
+        [_set_N('Nombre del instructor:'), set_N("{} {} {}".format(teacherWillTeach[0][0], teacherWillTeach[0][1], teacherWillTeach[0][2]))],
+        [_set_N('Modalidad:'), _set_N('Presencial'),set_N(presential), _set_N('Virtual'),set_N(virtual)],
+        [_set_N('Fecha de realización:'), set_N('Del {} al {} de {} del {}'.format(course["dateStart"].day, course["dateEnd"].day, months[course["dateStart"].month-1], course["dateEnd"].year))],
+        [_set_N('Horario:'), set_N(course['timetable'])],
+        [_set_N('Sede:'), set_N(course['place'])]
     ]
     tableSignList = [
         [""],
@@ -304,7 +317,7 @@ def inscription():
         ('BOX', (0, 0), (-1, -1), 1, colors.black),
         ('BOX', (0, 0), (-1, 0), 1, colors.black),
         ('ALIGN',(0, 0), (-1, -1),'LEFT'),
-        ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
+        ('VALIGN',(0, 0), (-1, 3),'MIDDLE'),
         ('LINEBELOW', (1, 1), (-1, 1), 0.5, colors.black),
         ('LINEBELOW', (1, 3), (1, 3), 0.5, colors.black),
         ('LINEBELOW', (3, 3), (3, 3), 0.5, colors.black),
@@ -342,7 +355,12 @@ def inscription():
         ('LINEBELOW', (1, 5), (4, 5), 0.5, colors.black), #horario
         ('BOX', (2, 3), (2, 3), 0.5, colors.black),
         ('BOX', (4, 3), (4, 3), 0.5, colors.black),
-        ('SPAN', (0,0), (-1, 0)),     
+        ('SPAN', (0,0), (-1, 0)), 
+        ('SPAN', (1,1), (-1, 1)), 
+        ('SPAN', (1,2), (-1, 2)), 
+        ('SPAN', (1,4), (-1, 4)), 
+        ('SPAN', (1,5), (-1, 5)),  
+        ('SPAN', (1,6), (-1, 6)),         
         ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
     ], colWidths=(100, 126, 70, 126, 70), rowHeights=(15, 12, 12, 12, 12, 12, 12))
     tableSign = Table(tableSignList, style=[
