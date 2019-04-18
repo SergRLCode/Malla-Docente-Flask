@@ -6,7 +6,7 @@ from passlib.hash import pbkdf2_sha256 as sha256
 from reportlab.pdfgen import canvas
 from app import app
 from marsh import *
-from pdfs import assistantList, coursesList, inscription
+from pdfs import assistantList, coursesList, inscription, pollDocument
 
 @app.route('/login', methods=['POST'])
 def login_user():
@@ -143,7 +143,6 @@ def coursesList_view():
             course["courseTo"]
         ])
     return coursesList(courses)
-
 # --> Lee esto: Lo estoy haciendo incorrectamente pero solo para prueba, porque el usuario no enviara su RFC, sino que por medio del JSON Web Token, se obtendra el RFC para obtener el documento <--
 # --> Lee esto: Lo estoy haciendo incorrectamente pero solo para prueba, porque el usuario no enviara su RFC, sino que por medio del JSON Web Token, se obtendra el RFC para obtener el documento <--
 # --> Lee esto: Lo estoy haciendo incorrectamente pero solo para prueba, porque el usuario no enviara su RFC, sino que por medio del JSON Web Token, se obtendra el RFC para obtener el documento <--
@@ -166,7 +165,30 @@ def getInscriptionDocument(course_id):
         else:
             return jsonify({"message":"error"})
             
-# ==> --> In Develop <-- <==
+@app.route('/poll', methods=['GET'])
+def poll_view():
+    if(request.method == 'GET'):
+        # data = request.get_json()
+        data = {	
+            "one": 5,
+	        "two": 5,
+	        "three": 5,
+	        "four": 5, 
+	        "five": 4,
+	        "six": 5,
+	        "seven": 5,
+	        "eight": 5,
+	        "nine": 5,
+	        "ten": 5,
+	        "eleven": 4,
+	        "twelve": 4,
+	        "thirteen": 4,
+	        "fourteen": 5,
+	        "explication": "porque ti",
+	        "commentaries": "pos estuvo chido el curso la neta que si"
+        }
+        return pollDocument(data)
+#  ==> --> In Develop <-- <==
 
 # NO USES ESTAS RUTAS TODAVIA, ESTAN EN PRUEBA TODAVIA
 # NO USES ESTAS RUTAS TODAVIA, ESTAN EN PRUEBA TODAVIA

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from reportlab.platypus import Table, TableStyle, Paragraph, SimpleDocTemplate, Image, PageTemplate, Spacer
+from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Image, PageTemplate, Spacer
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus.flowables import KeepTogether
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfbase.pdfmetrics import stringWidth
@@ -13,37 +13,8 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from io import StringIO, BytesIO
 from datetime import datetime
+from pdfStyles import *
 
-# Global variables to style
-styles = getSampleStyleSheet()
-styleH2 = styles['Heading2']
-styleH2.alignment = TA_CENTER
-styleN = styles['Normal']
-styleN.fontSize = 8
-styleN.leading = 10
-styleN.alignment = TA_CENTER
-_styleH1 = styles['Heading1']
-_styleH1.fontSize = 11
-_styleH1.leading = 15
-_styleH1.alignment = TA_LEFT
-_styles = getSampleStyleSheet()
-_styleRN = _styles['Normal']
-_styleRN.fontSize = 8
-_styleRN.leading = 10
-_styleRN.alignment = TA_RIGHT
-
-def set_H2(text):
-    return Paragraph(text.upper(), styleH2)
-def set_N(text):
-    return Paragraph(text, styleN)
-def set_NU(text):
-    return Paragraph(text.upper(), styleN)
-def set_H1(text):
-    return Paragraph(text, _styleH1)
-def _set_N(text):
-    return Paragraph(text, _styleRN)
-def _set_NU(text):
-    return Paragraph(text.upper(), _styleRN)
 # Dict for metadata to landscapeLetterhead
 metaData = {
     "nameDocument": "",
@@ -385,3 +356,65 @@ def inscription(teacher, departament, course, teacherWillTeach):
     story.append(Spacer(1, inch))
     story.append(tableNote)
     return returnPDF(story, "cedula", letter, 85)
+
+def pollDocument(answers):
+    getMetaData('5cb0c19dab661b27708563a8')
+    tableTitleList = [
+        [set_H2('ENCUESTA PARA PARTICIPANTES ESCRITOS')]
+    ]
+    tableDataList = [
+        [set_SN("NOMBRE DEL EVENTO", 'white')],
+        [''],
+        [set_SN("DEPARTAMENTO ACADEMICO", 'white'), set_SN("INSTRUCTOR (S)", 'white')],
+        ['', ''],
+        [set_SN('LUGAR O SEDE', 'white'), [set_SNU('fecha de realización', 'white')], [set_SNU('duración', 'white')], [set_SNU('horario', 'white')]],
+        ['','','','']
+    ]
+    tablePollList = [
+        [set_CNMS('EVENTO', 'white')],
+        [set_NMS('1. El evento cubrió mis expectativas', 'black'), set_N('{}'.format(answers["one"]))],
+        [set_NMS('2. Se cumplió con el objetivo y programa', 'black'), set_N('{}'.format(answers["two"]))],
+        [set_NMS('3. La duración fue la adecuada para cumplir con el objetivo y programa', 'black'), set_N('{}'.format(answers["three"]))],
+        [set_NMS('4. Los contenidos del manual estuvieron estructurados en forma lógica, clara y sencilla', 'black'), set_N('{}'.format(answers["four"]))],
+        [set_NMS('5. Los contenidos del curso son útiles para mi desempeño laboral', 'black'), set_N('{}'.format(answers["five"]))],
+        [set_NMS('6. Las condiciones físicas del aula en que se desarrolló el evento son las adecuadas (limpieza, ventilación, iluminación, sanitarios)', 'black'), set_N('{}'.format(answers["six"]))],
+        [set_NMS('7. El personal organizador realizó las actividades necesarias para el mejor desarrollo del evento', 'black'), set_N('{}'.format(answers["seven"]))],
+        [set_CNMS('INSTRUCTOR', 'white')],
+        [set_NMS('8. El instructor mostró habilidad para transmitir el contenido del curso', 'black'), set_N('{}'.format(answers["eight"]))],
+        [set_NMS('9. El instructor expuso de manera clara y precisa el objetivo, el programa y criterios de evaluación del curso', 'black'), set_N('{}'.format(answers["nine"]))],
+        [set_NMS('10. El instructor alcaró las dudas que se presentaron durante el curso', 'black'), set_N('{}'.format(answers["ten"]))],
+        [set_CNMS('DESARROLLO LABORAL', 'white')],
+        [set_NMS('11. Las competencias desarrolladas con el evento mejorarán mi desempeño docente y/o profesional', 'black'), set_N('{}'.format(answers["eleven"]))],
+        [set_NMS('12. Las competencias adquiridas con el evento propiciarán el trabajo colaborativo', 'black'), set_N('{}'.format(answers["twelve"]))],
+        [set_NMS('13. Las competencias adquiridas me permitirán mayor comprensión de mis funciones y responsabilidades en la institución', 'black'), set_N('{}'.format(answers["thirteen"]))],
+        [set_NMS('14. Participo en la detección de necesidades de capacitación en mi departamento académico', 'black'), '']
+    ]
+    tableTitle = Table(tableTitleList)
+    tableData = Table(tableDataList, style = [
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),        
+        ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
+        ('SPAN', (0,0), (-1, 0)), 
+        ('SPAN', (0,1), (-1, 1)), 
+        ('SPAN', (1,2), (-1, 2)), 
+        ('SPAN', (1,3), (-1, 3)), 
+        ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+        ('BACKGROUND', (0, 2), (-1, 2), colors.black),
+        ('BACKGROUND', (0, 4), (-1, 4), colors.black),
+    ], colWidths=(246, 82, 82, 82), rowHeights=11)
+    tablePoll = Table(tablePollList, style = [
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),   
+        ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
+        ('SPAN', (0, 0), (-1, 0)),
+        ('SPAN', (0, 8), (-1, 8)),
+        ('SPAN', (0, 12), (-1, 12)),
+        ('SPAN', (0, 16), (-1, 16)),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+        ('BACKGROUND', (0, 8), (-1, 8), colors.black),
+        ('BACKGROUND', (0, 12), (-1, 12), colors.black),
+    ], colWidths=(420, 30), rowHeights=12)
+    story = []
+    story.append(tableTitle)
+    story.append(tableData)
+    story.append(Spacer(1, inch/4))
+    story.append(tablePoll)
+    return returnPDF(story, "encuesta", letter, 85)
