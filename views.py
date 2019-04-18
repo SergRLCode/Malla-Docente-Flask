@@ -183,8 +183,8 @@ def poll_view():
 	        "eleven": 4,
 	        "twelve": 4,
 	        "thirteen": 4,
-	        "fourteen": 5,
-	        "explication": "porque ti",
+	        "fourteen": "No",
+	        "explication": "porque nel prro",
 	        "commentaries": "pos estuvo chido el curso la neta que si"
         }
         return pollDocument(data)

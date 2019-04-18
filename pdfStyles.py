@@ -37,8 +37,8 @@ styleCNMS.alignment = TA_CENTER
 
 stylesMoreSmall = getSampleStyleSheet()
 styleNMS = stylesMoreSmall['Normal']
-styleNMS.fontSize = 5.83
-styleNMS.leading = 7
+styleNMS.fontSize = 6
+styleNMS.leading = 8
 
 def set_H2(text):
     return Paragraph(text.upper(), styleH2)

@@ -370,6 +370,13 @@ def pollDocument(answers):
         [set_SN('LUGAR O SEDE', 'white'), [set_SNU('fecha de realización', 'white')], [set_SNU('duración', 'white')], [set_SNU('horario', 'white')]],
         ['','','','']
     ]
+    yes = no = answerYes = answerNo = " "
+    if answers['fourteen'] == 'Si':
+        yes = "X"
+        answerYes = answers['explication']
+    if answers['fourteen'] == 'No':
+        no = "X"
+        answerNo = answers['explication']
     tablePollList = [
         [set_CNMS('EVENTO', 'white')],
         [set_NMS('1. El evento cubrió mis expectativas', 'black'), set_N('{}'.format(answers["one"]))],
@@ -387,7 +394,15 @@ def pollDocument(answers):
         [set_NMS('11. Las competencias desarrolladas con el evento mejorarán mi desempeño docente y/o profesional', 'black'), set_N('{}'.format(answers["eleven"]))],
         [set_NMS('12. Las competencias adquiridas con el evento propiciarán el trabajo colaborativo', 'black'), set_N('{}'.format(answers["twelve"]))],
         [set_NMS('13. Las competencias adquiridas me permitirán mayor comprensión de mis funciones y responsabilidades en la institución', 'black'), set_N('{}'.format(answers["thirteen"]))],
-        [set_NMS('14. Participo en la detección de necesidades de capacitación en mi departamento académico', 'black'), '']
+        [set_NMS('14. Participo en la detección de necesidades de capacitación en mi departamento académico<br/><br/>Si ({}) ¿Cómo? {}<br/>No ({}) ¿Por qué? {}'.format(yes, answerYes, no, answerNo), 'black')]
+    ]
+    tableCommentariesList = [
+        [set_NMS('<b>COMENTARIOS:</b> {}'.format(answers['commentaries']), 'black')]
+    ]
+    tableDateList = [
+        [set_N("FECHA")],
+        [set_N("DIA"), set_N('MES'), set_NU('año')],
+        [datetime.now().day, "0{}".format(datetime.now().month) if datetime.now().month<10 else datetime.now().month, datetime.now().year]
     ]
     tableTitle = Table(tableTitleList)
     tableData = Table(tableDataList, style = [
@@ -411,10 +426,25 @@ def pollDocument(answers):
         ('BACKGROUND', (0, 0), (-1, 0), colors.black),
         ('BACKGROUND', (0, 8), (-1, 8), colors.black),
         ('BACKGROUND', (0, 12), (-1, 12), colors.black),
-    ], colWidths=(420, 30), rowHeights=12)
+    ], colWidths=(420, 30))
+    tableCommentaries = Table(tableCommentariesList, style = [
+        ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN',(0, 0), (-1, -1),'TOP'),
+    ], rowHeights=80)
+    tableDate = Table(tableDateList, style=[
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),        
+        ('BOX', (0, 0), (-1, -1), 1, colors.black),
+        ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),
+        ('ALIGN',(0, 0), (-1, -1),'CENTER'),
+        ('SPAN', (0, 0), (2, 0))
+    ], colWidths=40, rowHeights=(10, 10, 15), hAlign='RIGHT')
     story = []
     story.append(tableTitle)
     story.append(tableData)
     story.append(Spacer(1, inch/4))
     story.append(tablePoll)
+    story.append(Spacer(1, inch/4))
+    story.append(tableCommentaries)
+    story.append(Spacer(1, inch/4))
+    story.append(tableDate)
     return returnPDF(story, "encuesta", letter, 85)
