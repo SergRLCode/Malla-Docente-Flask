@@ -289,20 +289,3 @@ def page_not_found(error):
         "message": "Pagina no encontrada"
     }
     return jsonify(error),404
-
-# EXAMPLES
-# """--------------  PyMongo  --------------"""
-# @app.route('/courses', methods=['GET', 'POST'])
-# def courses_view():
-#     all_courses = mongo.db.course
-#     courses = []
-#     for c in all_courses.find():
-#         data = json.loads(ju.dumps(c))
-#         courses.append(data)
-#     return jsonify(courses)
-
-# @app.route('/course/<id>')
-# def course_view(id):
-#     course = mongo.db.course.find({"_id": ObjectId(id)})
-#     data = json.loads(ju.dumps(course))
-#     return jsonify(data)
