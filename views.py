@@ -1,4 +1,5 @@
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
+from pdfs import assistantList, coursesList, inscription, pollDocument
 from models import Course, Teacher, LetterheadMetaData, Departament
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
@@ -6,7 +7,6 @@ from passlib.hash import pbkdf2_sha256 as sha256
 from reportlab.pdfgen import canvas
 from app import app
 from marsh import *
-from pdfs import assistantList, coursesList, inscription, pollDocument
 
 @app.route('/login', methods=['POST'])
 def login_user():
@@ -66,11 +66,10 @@ def course(id):
         datos = courseSchema.dump(course)
         return jsonify(datos)
     elif (request.method == 'PUT'):
-        attributes = ("name", "description", "dateStart", "dateEnd", "totalDays", "modality", "state", "serial")
+        attributes = ("courseName", "courseTo", "place", "description", "dateStart", "dateEnd", "modality", "state", "serial", "teacherRFC", "teachersInCourse", "timetable", "totalHours")
         data = request.get_json()
-        deserialized = courseSchema.load(data)
         for attribute in attributes:
-            course[attribute] = deserialized[attribute]
+            course[attribute] = data[attribute]
         course.save()
         return jsonify(data)
     elif (request.method == 'DELETE'):
@@ -188,10 +187,8 @@ def poll_view():
 	        "commentaries": "pos estuvo chido el curso la neta que si"
         }
         return pollDocument(data)
-#  ==> --> In Develop <-- <==
 
-# NO USES ESTAS RUTAS TODAVIA, ESTAN EN PRUEBA TODAVIA
-# NO USES ESTAS RUTAS TODAVIA, ESTAN EN PRUEBA TODAVIA
+#  ==> --> In Develop <-- <==
 
 @app.route('/logout', methods=['GET'])
 def logout_user():
@@ -205,13 +202,22 @@ def addTeacherinCourse_view(course_id):
             course = Course.objects.get(pk=course_id)
         except Course.DoesNotExist:
             return jsonify({"message": "Curso inexistente"})
-        all_rfc = Teacher.objects.all().values_list('rfc')
+        restOfcourses = Course.objects.filter(pk__ne=course_id).values_list('teachersInCourse')
+        all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')
         if(data['rfc'] not in all_rfc):
-            return jsonify({'message': 'RFC inexistente.'})
+            return jsonify({'message': 'RFC invalido.'})
         else:
             if(data['rfc'] in course['teachersInCourse']):
                 return jsonify({"message": "Docente agregado previamente."})
             else:
+                for rfcsCourse in restOfcourses:
+                    if data['rfc'] in rfcsCourse:
+                        timetable = Course.objects.filter(teachersInCourse=rfcsCourse).values_list('timetable', 'dateStart', 'dateEnd')
+                        courseOne = timetable[0][0].split('-')
+                        courseTwo = course['timetable'].split('-')
+                        if courseTwo[0] >= courseOne[0] <= courseTwo[1] or courseTwo[0] >= courseOne[1] <= courseTwo[1]:
+                            return jsonify({'message': 'Se empalma'})
+                        return jsonify({'message': 'Ya esta en uno'})
                 course['teachersInCourse'].append(data['rfc'])
                 course.save()
                 return jsonify({'message': 'Docente agregado con exito.'})
