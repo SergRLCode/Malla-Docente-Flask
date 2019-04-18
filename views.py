@@ -213,14 +213,11 @@ def addTeacherinCourse_view(course_id):
                 for rfcsCourse in restOfcourses:
                     if data['rfc'] in rfcsCourse:
                         timetable = Course.objects.filter(teachersInCourse=rfcsCourse).values_list('timetable', 'dateStart', 'dateEnd')
-                        courseOneStart = timetable[0][1]
-                        courseOneEnd = timetable[0][2]
                         courseOne = timetable[0][0].split('-')
                         courseTwo = course['timetable'].split('-')
-                        print(courseOne, courseTwo)
-                        if (courseTwo[0] <= courseOne[0] <= courseTwo[1]) or (courseTwo[0] <= courseOne[1] <= courseTwo[1]):
-                            return jsonify({'message': 'Se empalma'})
-                        return jsonify({'message': 'Ya esta en uno'})
+                        if (timetable[0][1] <= course['dateStart'] <= timetable[0][2]) or (timetable[0][1] <= course['dateEnd'] <= timetable[0][2]):
+                            if (courseTwo[0] <= courseOne[0] < courseTwo[1]) or (courseTwo[0] <= courseOne[1] < courseTwo[1]):
+                                return jsonify({'message': 'Se empalma'})
                 course['teachersInCourse'].append(data['rfc'])
                 course.save()
                 return jsonify({'message': 'Docente agregado con exito.'})
