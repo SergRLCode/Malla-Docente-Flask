@@ -30,3 +30,19 @@ letterheadSchema = LetterheadSchema()
 #         fields = ('name', 'description', 'dateStart', 'dateEnd', 'totalDays', 'modality', 'state', 'serial')
 
 # .pyc file extension: this file makes more easy the exportation of any module from another file
+
+    # {
+    # "workbench.iconTheme": "material-icon-theme",
+    # "window.zoomLevel": 0,
+    # "workbench.colorTheme": "Blueberry dark theme",
+    # "python.jediEnabled": false,
+    # "liveServer.settings.donotShowInfoMsg": true,
+    # "javascript.updateImportsOnFileMove.enabled": "always",
+    # "liveServer.settings.NoBrowser": true,
+    # "liveServer.settings.CustomBrowser": "firefox",
+    # "workbench.startupEditor": "newUntitledFile",
+    # "editor.suggestSelection": "first",
+    # "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+    # "editor.fontFamily": "Fira Code",
+    # "editor.fontLigatures": true
+    # }
