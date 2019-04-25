@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Image, PageTemplate, Spacer, Paragraph
-from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus.flowables import KeepTogether
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.lib.styles import ParagraphStyle
 from flask import make_response, send_file
 from models import LetterheadMetaData
 from reportlab.lib.units import inch
@@ -13,69 +12,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from io import StringIO, BytesIO
 from datetime import datetime
-
-# --> ==> LOS MALDITOS ESTILOS <== <--
-styles = getSampleStyleSheet()
-styleH2 = styles['Heading2']
-styleH2.alignment = TA_CENTER
-styleN = styles['Normal']
-styleN.fontSize = 8
-styleN.leading = 10
-styleN.alignment = TA_CENTER
-_styleH1 = styles['Heading1']
-_styleH1.fontSize = 11
-_styleH1.leading = 15
-_styleH1.alignment = TA_LEFT
-_styles = getSampleStyleSheet()
-_styleRN = _styles['Normal']
-_styleRN.fontSize = 8
-_styleRN.leading = 10
-_styleRN.alignment = TA_RIGHT
-stylesSmall = getSampleStyleSheet()
-styleNS = stylesSmall['Normal']
-styleNS.fontSize = 5.83
-styleNS.leading = 7
-styleNS.alignment = TA_CENTER
-stylesCenterMoreSmall = getSampleStyleSheet()
-styleCNMS = stylesCenterMoreSmall['Normal']
-styleCNMS.fontSize = 8
-styleCNMS.leading = 10
-styleCNMS.alignment = TA_CENTER
-stylesMoreSmall = getSampleStyleSheet()
-styleNMS = stylesMoreSmall['Normal']
-styleNMS.fontSize = 6
-styleNMS.leading = 8
-
-def set_H2(text):
-    return Paragraph(text.upper(), styleH2)
-
-def set_N(text):
-    return Paragraph(text, styleN)
-
-def set_NU(text):
-    return Paragraph(text.upper(), styleN)
-
-def set_H1(text):
-    return Paragraph(text, _styleH1)
-
-def _set_N(text):
-    return Paragraph(text, _styleRN)
-
-def _set_NU(text):
-    return Paragraph(text.upper(), _styleRN)
-
-def set_SN(text, color):
-    return Paragraph('<font color={}>{}</font>'.format(color, text), styleNS)
-
-def set_SNU(text, color):
-    return Paragraph('<font color={}>{}</font>'.format(color, text).upper(), styleNS)
-
-def set_CNMS(text, color):
-    return Paragraph('<font color={}>{}</font>'.format(color, text), styleCNMS)
-
-def set_NMS(text, color):
-    return Paragraph('<font color={}>{}</font>'.format(color, text), styleNMS)
-
+from pdfStyles import *
 # Dict for metadata to landscapeLetterhead
 metaData = {
     "nameDocument": "",
@@ -288,10 +225,10 @@ def inscription(teacher, departament, course, teacherWillTeach):
     ]
     tablePersonalDataList = [
         [set_H1("1. DATOS PERSONALES")],
-        [_set_N('Nombre: '), set_N(teacher['fstSurname']), set_N(teacher['sndSurname']), set_N(teacher['name'])],
+        [set_RN('Nombre: '), set_N(teacher['fstSurname']), set_N(teacher['sndSurname']), set_N(teacher['name'])],
         ["", set_N('Apellido Paterno'), set_N('Apellido Materno'), set_N('Nombre (s)')],
-        [_set_NU('r.f.c.:'), set_N(teacher['rfc']), _set_N('Telefono particular:'), set_N(teacher['numberPhone'])],
-        [_set_N('Correo electronico:'), set_N(teacher['email'])]
+        [set_RNU('r.f.c.:'), set_N(teacher['rfc']), set_RN('Telefono particular:'), set_N(teacher['numberPhone'])],
+        [set_RN('Correo electronico:'), set_N(teacher['email'])]
     ]
     lic = maes = dr = otro = otrotxt = ""
     if(teacher['studyLevel']=='Licenciatura'):
@@ -305,15 +242,15 @@ def inscription(teacher, departament, course, teacherWillTeach):
         otrotxt = teacher['studyLevel']
     tableStudiesList = [
         [set_H1("2. ESTUDIOS")],
-        [_set_N('Licenciatura'), lic, _set_N('Maestría'), maes, _set_N('Doctorado'), dr, _set_N('Otro'), otro, set_N(otrotxt)],
-        [_set_N('Título en:'), set_N("{} con especialidad en {}".format(teacher['degree'], teacher['speciality']))]
+        [set_RN('Licenciatura'), lic, set_RN('Maestría'), maes, set_RN('Doctorado'), dr, set_RN('Otro'), otro, set_N(otrotxt)],
+        [set_RN('Título en:'), set_N("{} con especialidad en {}".format(teacher['degree'], teacher['speciality']))]
     ]
     tableLaboralDataList = [
         [set_H1("3. DATOS LABORALES")],
-        [_set_N('Departamento académico:'), set_N(departament["name"])],
-        [_set_N('Jefe Inmediato:'), set_N(departament['boss'])],
-        [_set_N('Puesto actual:'), set_N(teacher['position'])],
-        [_set_N('Horario:'), set_N(teacher['schedule'])]
+        [set_RN('Departamento académico:'), set_N(departament["name"])],
+        [set_RN('Jefe Inmediato:'), set_N(departament['boss'])],
+        [set_RN('Puesto actual:'), set_N(teacher['position'])],
+        [set_RN('Horario:'), set_N(teacher['schedule'])]
     ]
     presential = virtual = " "
     if course["modality"] == "Presencial":                     
@@ -323,12 +260,12 @@ def inscription(teacher, departament, course, teacherWillTeach):
     months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
     tableCourseDataList = [
         [set_H1('4. DATOS DEL EVENTO')],
-        [_set_N('Nombre del evento:'), set_N(course['courseName'])],
-        [_set_N('Nombre del instructor:'), set_N("{} {} {}".format(teacherWillTeach[0][0], teacherWillTeach[0][1], teacherWillTeach[0][2]))],
-        [_set_N('Modalidad:'), _set_N('Presencial'),set_N(presential), _set_N('Virtual'),set_N(virtual)],
-        [_set_N('Fecha de realización:'), set_N('Del {} al {} de {} del {}'.format(course["dateStart"].day, course["dateEnd"].day, months[course["dateStart"].month-1], course["dateEnd"].year))],
-        [_set_N('Horario:'), set_N(course['timetable'])],
-        [_set_N('Sede:'), set_N(course['place'])]
+        [set_RN('Nombre del evento:'), set_N(course['courseName'])],
+        [set_RN('Nombre del instructor:'), set_N("{} {} {}".format(teacherWillTeach[0][0], teacherWillTeach[0][1], teacherWillTeach[0][2]))],
+        [set_RN('Modalidad:'), set_RN('Presencial'),set_N(presential), set_RN('Virtual'),set_N(virtual)],
+        [set_RN('Fecha de realización:'), set_N('Del {} al {} de {} del {}'.format(course["dateStart"].day, course["dateEnd"].day, months[course["dateStart"].month-1], course["dateEnd"].year))],
+        [set_RN('Horario:'), set_N(course['timetable'])],
+        [set_RN('Sede:'), set_N(course['place'])]
     ]
     tableSignList = [
         [""],

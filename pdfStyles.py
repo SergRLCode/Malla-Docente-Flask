@@ -52,10 +52,10 @@ def set_NU(text):
 def set_H1(text):
     return Paragraph(text, _styleH1)
 
-def _set_N(text):
+def set_RN(text):
     return Paragraph(text, _styleRN)
 
-def _set_NU(text):
+def set_RNU(text):
     return Paragraph(text.upper(), _styleRN)
 
 def set_SN(text, color):
