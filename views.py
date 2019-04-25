@@ -73,8 +73,7 @@ def course(id):
         course.save()
         return jsonify(data)
     elif (request.method == 'DELETE'):
-        deleted = course.name
-        advice = "Curso {} eliminado".format(deleted)
+        advice = "Curso {} eliminado".format(course.courseName)
         course.delete()
         return jsonify({"message":advice})
 
@@ -199,25 +198,31 @@ def addTeacherinCourse_view(course_id):
     if(request.method == 'POST'):
         data = request.get_json()
         try:
-            course = Course.objects.get(pk=course_id)
+            course = Course.objects.get(pk=course_id)   # Obtiene la informacion del curso seleccionado
         except Course.DoesNotExist:
             return jsonify({"message": "Curso inexistente"})
-        restOfcourses = Course.objects.filter(pk__ne=course_id).values_list('teachersInCourse')
-        all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')
-        if(data['rfc'] not in all_rfc):
+        restOfcourses = Course.objects.filter(pk__ne=course_id).values_list('teachersInCourse') # Obtiene las listas de docentes de los demas cursos
+        all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')   # Obtiene todos los RFC de los docentes excepto el docente que imparte el curso
+        if(data['rfc'] not in all_rfc): # Verifica que exista el RFC                                    
             return jsonify({'message': 'RFC invalido.'})
-        else:
-            if(data['rfc'] in course['teachersInCourse']):
+        else:   # En caso de que SI exista...
+            if(data['rfc'] in course['teachersInCourse']):  # Verifica que el docente ya esta en la lista
                 return jsonify({"message": "Docente agregado previamente."})
-            else:
-                for rfcsCourse in restOfcourses:
-                    if data['rfc'] in rfcsCourse:
-                        timetable = Course.objects.filter(teachersInCourse=rfcsCourse).values_list('timetable', 'dateStart', 'dateEnd')
-                        courseOne = timetable[0][0].split('-')
-                        courseTwo = course['timetable'].split('-')
-                        if (timetable[0][1] <= course['dateStart'] <= timetable[0][2]) or (timetable[0][1] <= course['dateEnd'] <= timetable[0][2]):
-                            if (courseTwo[0] <= courseOne[0] < courseTwo[1]) or (courseTwo[0] <= courseOne[1] < courseTwo[1]):
-                                return jsonify({'message': 'Se empalma'})
+            else:   # Si no...
+                for rfcsCourse in restOfcourses: # Itera sobre el array que contiene los array de docentes de cada curso
+                    if data['rfc'] in rfcsCourse:   # Si el docente ya esta en un curso...
+                        coursesData = Course.objects.filter(teachersInCourse=rfcsCourse).values_list('timetable', 'dateStart', 'dateEnd', 'courseName') # Obtiene los datos del curso
+                        for assignature in coursesData: # La iteracion es para cuando la lista de docentes en curso se repita con otra xdxd
+                            courseOne = assignature[0].split('-')   # Marihuanada
+                            courseTwo = course['timetable'].split('-')  # Otra marihuanada
+                            if (assignature[1] <= course['dateStart'] <= assignature[2]) or (assignature[1] <= course['dateEnd'] <= assignature[2]): # Verifica que las fechas sean distintas, si no lo son...
+                                """La condicion de abajo verifica las marihuanadas 
+                                que hice, o sea, que la hora de inicio y finalizacion del curso, 
+                                no este entre las horas de otro de inicio y finalizacioncurso"""
+                                if (courseTwo[0] <= courseOne[0] < courseTwo[1]) or (courseTwo[0] <= courseOne[1] < courseTwo[1]): 
+                                    return jsonify({'message': 'Se empalma'})
+                if(course['teachersInCourse'] == ["No hay docentes registrados"]):
+                    course['teachersInCourse'] = []
                 course['teachersInCourse'].append(data['rfc'])
                 course.save()
                 return jsonify({'message': 'Docente agregado con exito.'})
@@ -232,6 +237,8 @@ def removeTeacherinCourse_view(course_id):
             return jsonify({"message": "Curso inexistente"})
         if(data['rfc'] in course['teachersInCourse']):
             course['teachersInCourse'].remove(data['rfc'])
+            if not course['teachersInCourse']:
+                course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
             course.save()
             return jsonify({"message": "Docente dado de baja exitosamente"})
         else:
