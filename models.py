@@ -2,7 +2,6 @@ from flask_mongoengine import MongoEngine
 from app import db, app
 import datetime
 
-
 class Course(db.Document):
     Online = 'Virtual'
     Presential = 'Presencial'
@@ -23,8 +22,7 @@ class Course(db.Document):
     teacherRFC = db.StringField(required=True)
     modality = db.StringField(choices=modality_choice)
     dateStart = db.DateTimeField()
-    # 2019-04-08 13:21:08.456998 --> formato a ingresar para las fechas
-    dateEnd = db.DateTimeField()
+    dateEnd = db.DateTimeField()  # 2019-04-08 13:21:08.456998 --> formato a ingresar para las fechas
     timetable = db.StringField()
     place = db.StringField()
     # Courses List Data
@@ -36,7 +34,6 @@ class Course(db.Document):
     serial = db.IntField()
     # Status
     state = db.StringField(choices=state_choice)
-
 
 class Teacher(db.Document):
     teacher = 'Docente'
@@ -75,12 +72,10 @@ class Teacher(db.Document):
     # Sesion Data
     userType = db.StringField(choices=userType_choice)
     pin = db.StringField()
-
-
+    
 class Departament(db.Document):
     name = db.StringField()
     boss = db.StringField()
-
 
 class LetterheadMetaData(db.Document):
     nameDocument = db.StringField()

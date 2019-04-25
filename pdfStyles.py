@@ -40,42 +40,32 @@ styleNMS = stylesMoreSmall['Normal']
 styleNMS.fontSize = 6
 styleNMS.leading = 8
 
-
 def set_H2(text):
     return Paragraph(text.upper(), styleH2)
-
 
 def set_N(text):
     return Paragraph(text, styleN)
 
-
 def set_NU(text):
     return Paragraph(text.upper(), styleN)
-
 
 def set_H1(text):
     return Paragraph(text, _styleH1)
 
-
 def _set_N(text):
     return Paragraph(text, _styleRN)
-
 
 def _set_NU(text):
     return Paragraph(text.upper(), _styleRN)
 
-
 def set_SN(text, color):
     return Paragraph('<font color={}>{}</font>'.format(color, text), styleNS)
-
 
 def set_SNU(text, color):
     return Paragraph('<font color={}>{}</font>'.format(color, text).upper(), styleNS)
 
-
 def set_CNMS(text, color):
     return Paragraph('<font color={}>{}</font>'.format(color, text), styleCNMS)
-
 
 def set_NMS(text, color):
     return Paragraph('<font color={}>{}</font>'.format(color, text), styleNMS)
