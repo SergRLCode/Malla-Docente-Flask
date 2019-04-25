@@ -5,17 +5,21 @@ from app import app
 
 marsh = Marshmallow(app)
 
+
 class CourseSchema(ModelSchema):
     class Meta:
         model = Course
+
 
 class TeacherSchema(ModelSchema):
     class Meta:
         model = Teacher
 
+
 class LetterheadSchema(ModelSchema):
     class Meta:
         model = LetterheadMetaData
+
 
 courseSchema = CourseSchema()
 courseSchemas = CourseSchema(many=True)
