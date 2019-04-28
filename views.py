@@ -23,14 +23,15 @@ def login_user():
                 'refresh_token': refresh_token
             }})
         else:
-            return jsonify({"message": "NIP incorrecto"})
+            return jsonify({"data": {"message": "NIP incorrecto"}})
     except Teacher.DoesNotExist:
-        return jsonify({"message": "Docente no registrado"})
+        return jsonify({"data": {"message": "Docente no registrado"}})
 
 @app.route('/courses', methods=['GET', 'POST'])
+@jwt_required
 def courses():
     if (request.method == 'GET'):
-        all_courses = Course.objects.all()
+        all_courses = Course.objects.filter(teacherRFC__ne=get_raw_jwt()['identity'])
         data = courseSchemas.dump(all_courses)
         return jsonify(data)
     elif (request.method == 'POST'):
@@ -56,15 +57,20 @@ def courses():
             ).save()         
             return jsonify({"message": "Curso guardado."})
 # Seguir modificando Modelo
-@app.route('/course/<id>', methods=['GET', 'PUT', 'DELETE'])
-def course(id):
+@app.route('/course/<name>', methods=['GET', 'PUT', 'DELETE'])
+def course(name):
     try:
-        course = Course.objects.get(pk=id)
+        course = Course.objects.get(courseName=name)
     except Course.DoesNotExist:
         return jsonify({"message": "Don't exists"})
     if (request.method == 'GET'):
         datos = courseSchema.dump(course)
-        return jsonify(datos)
+        newDictToSend = datos[0]
+        for key in ('teachersInCourse', 'id', 'serial'):
+            del newDictToSend[key]
+        teacherWillteach = Teacher.objects.filter(rfc=course['teacherRFC']).values_list("name", "fstSurname", "sndSurname")
+        newDictToSend['teacherRFC'] = "{} {} {}".format(teacherWillteach[0][0], teacherWillteach[0][1], teacherWillteach[0][2])
+        return jsonify(newDictToSend)
     elif (request.method == 'PUT'):
         attributes = ("courseName", "courseTo", "place", "description", "dateStart", "dateEnd", "modality", "state", "serial", "teacherRFC", "teachersInCourse", "timetable", "totalHours")
         data = request.get_json()
@@ -216,9 +222,8 @@ def addTeacherinCourse_view(course_id):
                             courseOne = assignature[0].split('-')   # Marihuanada
                             courseTwo = course['timetable'].split('-')  # Otra marihuanada
                             if (assignature[1] <= course['dateStart'] <= assignature[2]) or (assignature[1] <= course['dateEnd'] <= assignature[2]): # Verifica que las fechas sean distintas, si no lo son...
-                                """La condicion de abajo verifica las marihuanadas 
-                                que hice, o sea, que la hora de inicio y finalizacion del curso, 
-                                no este entre las horas de otro de inicio y finalizacioncurso"""
+                                """La condicion de abajo verifica las marihuanadas que hice, o sea, que la hora de inicio y 
+                                finalizacion del curso, no este entre las horas de otro de inicio y finalizacioncurso"""
                                 if (courseTwo[0] <= courseOne[0] < courseTwo[1]) or (courseTwo[0] <= courseOne[1] < courseTwo[1]): 
                                     return jsonify({'message': 'Se empalma'})
                 if(course['teachersInCourse'] == ["No hay docentes registrados"]):
@@ -275,10 +280,10 @@ def adddepaView():
         return jsonify({"message": "san sebastian"})
 
 # Example of route with JWT 
-@app.route('/teacher/<id>', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/pull', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required
-def teacher(id):
-    return jsonify({"message": "si pull"})
+def teacher():
+    return jsonify({"message": "Hello {}".format(get_raw_jwt()['identity'])})
 
 @app.route('/certificate_view/<id>', methods=['GET'])
 def certificate_view(id):

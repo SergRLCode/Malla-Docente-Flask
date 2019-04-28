@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 
+from flask_jwt_extended import JWTManager
 from flask_mongoengine import MongoEngine
+from flask_cors import CORS
 from flask import Flask
 
 app = Flask(__name__)
 app.config['MONGODB_DB'] = 'Capacitacion'
-app.config['JWT_SECRET_KEY'] = 'jwt-secret-string'
+app.config['JWT_SECRET_KEY'] = 'uCm3uZm1kGPlB7ATTlsMoA'
+
 
 db = MongoEngine(app)
+jwt = JWTManager(app)
+CORS(app)
 
 from views import *
 
 if __name__ == '__main__':
-   app.run(debug=True, port=5001)
+   app.run(debug=True, port=5001, host='192.168.1.77')
 
 # First upload
 # git init 
