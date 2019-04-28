@@ -77,11 +77,11 @@ def course(name):
         for attribute in attributes:
             course[attribute] = data[attribute]
         course.save()
-        return jsonify(data)
+        return jsonify({'message': 'Cambios guardados.'})
     elif (request.method == 'DELETE'):
         advice = "Curso {} eliminado".format(course.courseName)
         course.delete()
-        return jsonify({"message":advice})
+        return jsonify({"message": advice})
 
 @app.route('/course/<course_id>/assistantList', methods=['GET'])
 def assistantList_view(course_id):
@@ -129,6 +129,31 @@ def teachers():
             pin = sha256.hash(data["pin"])
         ).save()
         return jsonify(data)
+
+@app.route('/teacher/<rfc>', methods=['GET', 'PUT', 'DELETE'])
+def getTeacher(rfc):
+    try:
+        teacher = Teacher.objects.get(rfc=rfc)
+    except Teacher.DoesNotExist:
+        return jsonify({'message': 'Docente no registrado'})
+    if request.method == 'GET':
+        data = teacherSchema.dump(teacher)
+        dictReturn = data[0]
+        for value in ('id', 'pin'):
+            del dictReturn[value]
+        return jsonify(dictReturn)
+    elif request.method == 'PUT':
+        attributes = ('rfc', 'name', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
+        data = request.get_json()
+        for value in attributes:
+            teacher[value] = data[value]
+        teacher['pin'] = sha256.hash(data["pin"])        
+        teacher.save()
+        return jsonify({'message': 'Datos guardados.'})
+    elif request.method == 'DELETE':
+        advice = "{} eliminado".format(teacher.rfc)
+        teacher.delete()
+        return jsonify({"message": advice})
 
 @app.route('/courses/coursesList', methods=['GET'])
 def coursesList_view():
