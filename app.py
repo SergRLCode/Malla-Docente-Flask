@@ -17,7 +17,7 @@ CORS(app)
 from views import *
 
 if __name__ == '__main__':
-   app.run(debug=True, port=5001, host='192.168.1.77')
+   app.run(debug=True)
 
 # First upload
 # git init 

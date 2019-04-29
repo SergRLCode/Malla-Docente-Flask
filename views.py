@@ -232,25 +232,31 @@ def addTeacherinCourse_view(course_id):
             course = Course.objects.get(pk=course_id)   # Obtiene la informacion del curso seleccionado
         except Course.DoesNotExist:
             return jsonify({"message": "Curso inexistente"})
-        restOfcourses = Course.objects.filter(pk__ne=course_id).values_list('teachersInCourse') # Obtiene las listas de docentes de los demas cursos
         all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')   # Obtiene todos los RFC de los docentes excepto el docente que imparte el curso
-        if(data['rfc'] not in all_rfc): # Verifica que exista el RFC                                    
+        courseWillTeach = Course.objects.filter(teacherRFC=data['rfc']).values_list('timetable', 'dateStart', 'dateEnd', 'courseName')
+        restOfcourses = Course.objects.filter(pk__ne=course_id).values_list('teachersInCourse', 'courseName') # Obtiene las listas de docentes de los demas cursos
+        if(data['rfc'] not in all_rfc): # Verifica que exista el RFC                                   
             return jsonify({'message': 'RFC invalido.'})
         else:   # En caso de que SI exista...
             if(data['rfc'] in course['teachersInCourse']):  # Verifica que el docente ya esta en la lista
                 return jsonify({"message": "Docente agregado previamente."})
             else:   # Si no...
+                hoursCourseOne = course['timetable'].split('-')  # Una marihuanada
+                if len(courseWillTeach)>0:
+                    if(courseWillTeach[0][1] <= course['dateStart'] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course['dateEnd'] <= courseWillTeach[0][2]):
+                        hoursCourseTwo = courseWillTeach[0][0].split('-')
+                        if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
+                            return jsonify({'message': 'Se empalma con la materia que imparte'})     
                 for rfcsCourse in restOfcourses: # Itera sobre el array que contiene los array de docentes de cada curso
-                    if data['rfc'] in rfcsCourse:   # Si el docente ya esta en un curso...
-                        coursesData = Course.objects.filter(teachersInCourse=rfcsCourse).values_list('timetable', 'dateStart', 'dateEnd', 'courseName') # Obtiene los datos del curso
-                        for assignature in coursesData: # La iteracion es para cuando la lista de docentes en curso se repita con otra xdxd
-                            courseOne = assignature[0].split('-')   # Marihuanada
-                            courseTwo = course['timetable'].split('-')  # Otra marihuanada
-                            if (assignature[1] <= course['dateStart'] <= assignature[2]) or (assignature[1] <= course['dateEnd'] <= assignature[2]): # Verifica que las fechas sean distintas, si no lo son...
-                                """La condicion de abajo verifica las marihuanadas que hice, o sea, que la hora de inicio y 
-                                finalizacion del curso, no este entre las horas de otro de inicio y finalizacioncurso"""
-                                if (courseTwo[0] <= courseOne[0] < courseTwo[1]) or (courseTwo[0] <= courseOne[1] < courseTwo[1]): 
-                                    return jsonify({'message': 'Se empalma'})
+                    if data['rfc'] in rfcsCourse[0]:   # Si el docente ya esta en un curso...
+                        coursesData = Course.objects.filter(teachersInCourse=rfcsCourse[0], courseName=rfcsCourse[1]).values_list('timetable', 'dateStart', 'dateEnd', 'courseName') # Obtiene los datos del curso
+                        hoursCourseTwo = coursesData[0][0].split('-')   # Otra marihuanada
+                        if (coursesData[0][1] <= course['dateStart'] <= coursesData[0][2]) or (coursesData[0][1] <= course['dateEnd'] <= coursesData[0][2]): # Verifica que las fechas sean distintas, si no lo son...
+                            """La condicion de abajo verifica las marihuanadas que hice, o sea, que la hora de inicio y 
+                            finalizacion del curso, no este entre las horas de otro de inicio y finalizacion del curso"""
+                            if (hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1]) or (hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]): 
+                                return jsonify({'message': 'Se empalma con otro curso a tomar'})
+                                # print(hoursCourseTwo)
                 if(course['teachersInCourse'] == ["No hay docentes registrados"]):
                     course['teachersInCourse'] = []
                 course['teachersInCourse'].append(data['rfc'])
