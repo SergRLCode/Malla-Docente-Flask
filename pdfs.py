@@ -21,6 +21,8 @@ metaData = {
     "emitDate": ""
 }
 
+months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
 class PageNumCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
         canvas.Canvas.__init__(self, *args, **kwargs)
@@ -85,6 +87,9 @@ def portraitLetterhead(design, doc):
     tableHeader.wrapOn(design, 0, 0)
     tableHeader.drawOn(design, 45, 710)
 
+def periodOfTime(initDate, endDate):
+    return 'Del {} al {} de {} del {}'.format(initDate.day, endDate.day, months[endDate.month-1], endDate.year) if initDate.month==endDate.month else 'Del {} de {} al {} de {} del {}'.format(initDate.day, months[initDate.month-1], endDate.day, months[endDate.month-1], endDate.year) if initDate.year==endDate.year else 'Del {} de {} del {} al {} de {} del {}'.format(initDate.day, months[initDate.month-1], initDate.year, endDate.day, months[endDate.month-1], endDate.year)
+
 def returnPDF(story, name, size, top):
     output = BytesIO()
     doc = SimpleDocTemplate(output, pagesize = size, topMargin=top, bottomMargin=50)
@@ -109,12 +114,11 @@ def assistantList(teachers, courseTeacher, course):
         presential = "X"
     else:
         virtual = "X"
-    months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
     tableDataCourseList = [        
         ['', '', '', '', 'FOLIO:', course["serial"]],
         ['NOMBRE DEL EVENTO:', course["courseName"]],
         ['NOMBRE DEL INSTRUCTOR:', courseTeacher[0], 'DURACION:', "{} Hrs.".format(course["totalHours"]), 'HORARIO:', course["timetable"]],
-        ['PERIODO: ', 'Del {} al {} de {} del {}'.format(course["dateStart"].day, course["dateEnd"].day, months[course["dateStart"].month-1], course["dateEnd"].year), "SEDE:", course["place"]],
+        ['PERIODO: ', periodOfTime(course['dateStart'], course['dateEnd']), "SEDE:", course["place"]],
         ['MODALIDAD: ', 'PRESENCIAL(' + presential + ')', 'VIRTUAL(' + virtual + ')']
     ]
     arrayDays = []
@@ -185,7 +189,7 @@ def coursesList(courses):
     ]
     for x in range(0, len(courses)):
         tableCoursesList.append(
-            [str(x+1), set_N(courses[x][0]), set_N(courses[x][1]), set_N(courses[x][2]), set_N(courses[x][3]), set_N(courses[x][4]), set_N(courses[x][5]), set_N(courses[x][6]), '']
+            [str(x+1), set_N(courses[x][0]), set_N(courses[x][1]), set_N(periodOfTime(courses[x][2], courses[x][3])), set_N(courses[x][4]), set_N(courses[x][5]), set_N(courses[x][6]), set_N(courses[x][7]), '']
         )
     tableSignsList = [
         ["Elaboró", "Aprobó"],
@@ -257,7 +261,6 @@ def inscription(teacher, departament, course, teacherWillTeach):
         presential = "X"
     else:
         virtual = "X"
-    months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
     tableCourseDataList = [
         [set_H1('4. DATOS DEL EVENTO')],
         [set_RN('Nombre del evento:'), set_N(course['courseName'])],
@@ -355,18 +358,18 @@ def inscription(teacher, departament, course, teacherWillTeach):
     story.append(tableNote)
     return returnPDF(story, "cedula", letter, 85)
 
-def pollDocument(answers):
+def pollDocument(answers, courseData, teacher):
     getMetaData('5cb0c19dab661b27708563a8')
     tableTitleList = [
         [set_H2('ENCUESTA PARA PARTICIPANTES ESCRITOS')]
     ]
     tableDataList = [
         [set_SN("NOMBRE DEL EVENTO", 'white')],
-        [''],
+        [set_SN(courseData[0][0].upper(), 'black')],
         [set_SN("DEPARTAMENTO ACADEMICO", 'white'), set_SN("INSTRUCTOR (S)", 'white')],
-        ['', ''],
+        ['', set_SN('{} {} {}'.format(teacher[0][0], teacher[0][1], teacher[0][2]).upper(), 'black')],
         [set_SN('LUGAR O SEDE', 'white'), [set_SNU('fecha de realización', 'white')], [set_SNU('duración', 'white')], [set_SNU('horario', 'white')]],
-        ['','','','']
+        [set_SN(courseData[0][2].upper(), 'black'), set_SN(periodOfTime(courseData[0][3], courseData[0][4]), 'black'), set_SN('{} hrs.'.format(courseData[0][5]), 'black'), set_SN(courseData[0][6], 'black')]
     ]
     yes = no = answerYes = answerNo = " "
     if answers['fourteen'] == 'Si':
@@ -413,7 +416,7 @@ def pollDocument(answers):
         ('BACKGROUND', (0, 0), (-1, 0), colors.black),
         ('BACKGROUND', (0, 2), (-1, 2), colors.black),
         ('BACKGROUND', (0, 4), (-1, 4), colors.black),
-    ], colWidths=(246, 82, 82, 82), rowHeights=11)
+    ], colWidths=(246, 82, 82, 82))
     tablePoll = Table(tablePollList, style = [
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),   
         ('VALIGN',(0, 0), (-1, -1),'MIDDLE'),

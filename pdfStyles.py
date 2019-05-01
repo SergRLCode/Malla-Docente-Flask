@@ -25,7 +25,7 @@ _styleRN.alignment = TA_RIGHT
 
 stylesSmall = getSampleStyleSheet()
 styleNS = stylesSmall['Normal']
-styleNS.fontSize = 5.83
+styleNS.fontSize = 6
 styleNS.leading = 7
 styleNS.alignment = TA_CENTER
 
@@ -37,7 +37,7 @@ styleCNMS.alignment = TA_CENTER
 
 stylesMoreSmall = getSampleStyleSheet()
 styleNMS = stylesMoreSmall['Normal']
-styleNMS.fontSize = 6
+styleNMS.fontSize = 6.5
 styleNMS.leading = 8
 
 def set_H2(text):

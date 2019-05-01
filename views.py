@@ -83,10 +83,10 @@ def course(name):
         course.delete()
         return jsonify({"message": advice})
 
-@app.route('/course/<course_id>/assistantList', methods=['GET'])
-def assistantList_view(course_id):
+@app.route('/course/<name>/assistantList', methods=['GET'])
+def assistantList_view(name):
     try:
-        course = Course.objects.get(pk=course_id)
+        course = Course.objects.get(courseName=name)
     except Course.DoesNotExist:
         return jsonify({"message": "Curso inexistente"})
     courseTeacher = Teacher.objects.get(rfc=course['teacherRFC'])
@@ -165,7 +165,8 @@ def coursesList_view():
         courses.append([
             course["courseName"],
             course["description"],
-            "{}-{} de {} del {}".format(course["dateStart"].day, course["dateEnd"].day, months[course["dateStart"].month-1], course["dateStart"].year),
+            course["dateStart"],
+            course["dateEnd"],
             course["place"],
             "{} hrs.".format(course["totalHours"]),
             "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]),
@@ -178,12 +179,12 @@ def coursesList_view():
 # --> Lee esto: Lo estoy haciendo incorrectamente pero solo para prueba, porque el usuario no enviara su RFC, sino que por medio del JSON Web Token, se obtendra el RFC para obtener el documento <--
 # --> Lee esto: Lo estoy haciendo incorrectamente pero solo para prueba, porque el usuario no enviara su RFC, sino que por medio del JSON Web Token, se obtendra el RFC para obtener el documento <--
 # --> Lee esto: Lo estoy haciendo incorrectamente pero solo para prueba, porque el usuario no enviara su RFC, sino que por medio del JSON Web Token, se obtendra el RFC para obtener el documento <--
-@app.route('/inscriptionDocument/<course_id>', methods=['POST'])
-def getInscriptionDocument(course_id):
+@app.route('/inscriptionDocument/<name>', methods=['POST'])
+def getInscriptionDocument(name):
     if(request.method == 'POST'):
         data = request.get_json()
         try:
-            course = Course.objects.get(pk=course_id)
+            course = Course.objects.get(courseName=name)
         except Course.DoesNotExist:
             return jsonify({"message": "Curso inexistente"})
         teacher = Teacher.objects.get(rfc=data['rfc'])
@@ -194,31 +195,40 @@ def getInscriptionDocument(course_id):
         else:
             return jsonify({"message":"error"})
             
-@app.route('/poll', methods=['GET'])
-def poll_view():
-    if(request.method == 'GET'):
-        # data = request.get_json()
-        data = {	
-            "one": 5,
-	        "two": 5,
-	        "three": 5,
-	        "four": 5, 
-	        "five": 4,
-	        "six": 5,
-	        "seven": 5,
-	        "eight": 5,
-	        "nine": 5,
-	        "ten": 5,
-	        "eleven": 4,
-	        "twelve": 4,
-	        "thirteen": 4,
-	        "fourteen": "No",
-	        "explication": "porque nel prro",
-	        "commentaries": "pos estuvo chido el curso la neta que si"
-        }
-        return pollDocument(data)
 
 #  ==> --> In Develop <-- <==
+@app.route('/course/<name>/poll', methods=['GET'])
+@jwt_required
+def poll_view(name):
+    courseData = Course.objects.filter(courseName=name).values_list('courseName', 'teacherRFC', 'place', 'dateStart', 'dateEnd', 'totalHours', 'timetable', 'teachersInCourse')
+    if len(courseData)!=0:
+        if get_raw_jwt()['identity'] in courseData[0][7]:
+            teacherThatTeach = Teacher.objects.filter(rfc=courseData[0][1]).values_list('name', 'fstSurname', 'sndSurname')
+            if(request.method == 'GET'):
+                data = {	
+                    "one": 5,
+	                "two": 5,
+	                "three": 5,
+	                "four": 5, 
+	                "five": 4,
+	                "six": 5,
+	                "seven": 5,
+	                "eight": 5,
+	                "nine": 5,
+	                "ten": 5,
+	                "eleven": 4,
+	                "twelve": 4,
+	                "thirteen": 4,
+	                "fourteen": "No",
+	                "explication": "porque nel prro",
+	                "commentaries": "pos estuvo chido el curso la neta que si"
+                }
+                return pollDocument(data, courseData, teacherThatTeach)
+        else:
+            return jsonify({'message': 'Curso no registrado.'})
+    else:
+        return jsonify({'message': 'Curso inexistente.'})
+        
 
 @app.route('/logout', methods=['GET'])
 def logout_user():
@@ -256,7 +266,6 @@ def addTeacherinCourse_view(course_id):
                             finalizacion del curso, no este entre las horas de otro de inicio y finalizacion del curso"""
                             if (hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1]) or (hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]): 
                                 return jsonify({'message': 'Se empalma con otro curso a tomar'})
-                                # print(hoursCourseTwo)
                 if(course['teachersInCourse'] == ["No hay docentes registrados"]):
                     course['teachersInCourse'] = []
                 course['teachersInCourse'].append(data['rfc'])
