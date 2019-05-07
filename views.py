@@ -5,8 +5,19 @@ from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
 from passlib.hash import pbkdf2_sha256 as sha256
 from reportlab.pdfgen import canvas
-from app import app
+from app import app, jwt
 from marsh import *
+
+@jwt.token_in_blacklist_loader
+def check_if_token_in_blacklist(decrypted_token):
+    jti = decrypted_token['jti']
+    identity = decrypted_token['identity']
+    print(identity)
+    _jwt = BlacklistJWT.objects.all()
+    for value in _jwt:
+        if (jti==value['jwt']):
+            return True
+    # Si regresa un booleano False, permite el accesso, si regresa True, marca que se revoco el JWT
 
 @app.route('/login', methods=['POST'])
 def login_user():
@@ -31,7 +42,7 @@ def login_user():
 @jwt_required
 def courses():
     if (request.method == 'GET'):
-        all_courses = Course.objects.filter(teacherRFC__ne=get_raw_jwt()['identity'])
+        all_courses = Course.objects.filter(teacherRFC__ne=get_jwt_identity())
         data = courseSchemas.dump(all_courses)
         return jsonify(data)
     elif (request.method == 'POST'):
@@ -202,7 +213,7 @@ def getInscriptionDocument(name):
 def poll_view(name):
     courseData = Course.objects.filter(courseName=name).values_list('courseName', 'teacherRFC', 'place', 'dateStart', 'dateEnd', 'totalHours', 'timetable', 'teachersInCourse')
     if len(courseData)!=0:
-        if get_raw_jwt()['identity'] in courseData[0][7]:
+        if get_jwt_identity() in courseData[0][7]:
             teacherThatTeach = Teacher.objects.filter(rfc=courseData[0][1]).values_list('name', 'fstSurname', 'sndSurname')
             if(request.method == 'GET'):
                 data = {	
@@ -229,10 +240,32 @@ def poll_view(name):
     else:
         return jsonify({'message': 'Curso inexistente.'})
         
+@app.route('/refresh', methods=['GET'])
+@jwt_refresh_token_required
+def refresh_jwt():
+    print(get_raw_jwt()['identity'])
+    access_token = create_access_token(identity = get_jwt_identity(), expires_delta=td(hours=1))
+    return jsonify({'access_token': access_token})
 
-@app.route('/logout', methods=['GET'])
+# Example of route with JWT 
+@app.route('/pull')
+@jwt_required
+def teacher():
+    return jsonify({"message": "Hello {}".format(get_jwt_identity())})
+
+@app.route('/logoutA', methods=['GET'])
+@jwt_required
 def logout_user():
-    pass
+    _jwt = get_raw_jwt()['jti']
+    BlacklistJWT(jwt = _jwt).save()
+    return jsonify({'message': 'Bye bye!'})
+
+@app.route('/logoutR', methods=['GET'])
+@jwt_refresh_token_required
+def logout_user2():
+    _jwt = get_raw_jwt()['jti']
+    BlacklistJWT(jwt = _jwt).save()
+    return jsonify({'message': 'Bye bye!'})
 
 @app.route('/addTeacherinCourse/<course_id>', methods=['POST'])
 def addTeacherinCourse_view(course_id):
@@ -318,12 +351,6 @@ def adddepaView():
             boss = data["boss"]
         ).save()
         return jsonify({"message": "san sebastian"})
-
-# Example of route with JWT 
-@app.route('/pull', methods=['GET', 'PUT', 'DELETE'])
-@jwt_required
-def teacher():
-    return jsonify({"message": "Hello {}".format(get_raw_jwt()['identity'])})
 
 @app.route('/certificate_view/<id>', methods=['GET'])
 def certificate_view(id):

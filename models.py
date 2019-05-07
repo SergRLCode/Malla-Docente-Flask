@@ -83,6 +83,10 @@ class LetterheadMetaData(db.Document):
     version = db.IntField()
     emitDate = db.DateTimeField()
 
+class BlacklistJWT(db.Document):
+    jwt = db.StringField(unique = True)
+    identity = db.StringField()
+
 # python3, reserved word "dir", pa ver metodos
 
 # Docente, Administrador, Comunicacion, Jefe de departamento
