@@ -358,7 +358,7 @@ def inscription(teacher, departament, course, teacherWillTeach):
     story.append(tableNote)
     return returnPDF(story, "cedula", letter, 85)
 
-def pollDocument(answers, courseData, teacher):
+def pollDocument(answers, courseData, teacher, departament):
     getMetaData('5cb0c19dab661b27708563a8')
     tableTitleList = [
         [set_H2('ENCUESTA PARA PARTICIPANTES ESCRITOS')]
@@ -367,7 +367,7 @@ def pollDocument(answers, courseData, teacher):
         [set_SN("NOMBRE DEL EVENTO", 'white')],
         [set_SN(courseData[0][0].upper(), 'black')],
         [set_SN("DEPARTAMENTO ACADEMICO", 'white'), set_SN("INSTRUCTOR (S)", 'white')],
-        ['', set_SN('{} {} {}'.format(teacher[0][0], teacher[0][1], teacher[0][2]).upper(), 'black')],
+        [set_SN(departament, 'black'), set_SN('{} {} {}'.format(teacher[0][0], teacher[0][1], teacher[0][2]).upper(), 'black')],
         [set_SN('LUGAR O SEDE', 'white'), [set_SNU('fecha de realización', 'white')], [set_SNU('duración', 'white')], [set_SNU('horario', 'white')]],
         [set_SN(courseData[0][2].upper(), 'black'), set_SN(periodOfTime(courseData[0][3], courseData[0][4]), 'black'), set_SN('{} hrs.'.format(courseData[0][5]), 'black'), set_SN(courseData[0][6], 'black')]
     ]

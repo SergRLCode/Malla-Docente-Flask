@@ -208,33 +208,17 @@ def getInscriptionDocument(name):
             
 
 #  ==> --> In Develop <-- <==
-@app.route('/course/<name>/poll', methods=['GET'])
+@app.route('/course/<name>/poll', methods=['POST'])
 @jwt_required
 def poll_view(name):
     courseData = Course.objects.filter(courseName=name).values_list('courseName', 'teacherRFC', 'place', 'dateStart', 'dateEnd', 'totalHours', 'timetable', 'teachersInCourse')
     if len(courseData)!=0:
         if get_jwt_identity() in courseData[0][7]:
             teacherThatTeach = Teacher.objects.filter(rfc=courseData[0][1]).values_list('name', 'fstSurname', 'sndSurname')
-            if(request.method == 'GET'):
-                data = {	
-                    "one": 5,
-	                "two": 5,
-	                "three": 5,
-	                "four": 5, 
-	                "five": 4,
-	                "six": 5,
-	                "seven": 5,
-	                "eight": 5,
-	                "nine": 5,
-	                "ten": 5,
-	                "eleven": 4,
-	                "twelve": 4,
-	                "thirteen": 4,
-	                "fourteen": "No",
-	                "explication": "porque nel prro",
-	                "commentaries": "pos estuvo chido el curso la neta que si"
-                }
-                return pollDocument(data, courseData, teacherThatTeach)
+            departament = Teacher.objects.filter(rfc=get_jwt_identity()).values_list('departament')
+            if(request.method == 'POST'):
+                data = request.get_json()
+                return pollDocument(data, courseData, teacherThatTeach, departament[0])
         else:
             return jsonify({'message': 'Curso no registrado.'})
     else:

@@ -1,0 +1,8 @@
+Comunicacion
+    asignar folio a cursos, 
+Administrador: 
+    Todo xd
+Docente
+    Consultar: sus horarios, da de alta, cursos, encuesta, cambiar PIN
+Jefe de departamento
+    Consultar: cursos, docentes en ese departamento
