@@ -374,10 +374,10 @@ def pollDocument(answers, courseData, teacher, departament):
     yes = no = answerYes = answerNo = " "
     if answers['fourteen'] == 'Si':
         yes = "X"
-        answerYes = answers['explication']
+        answerYes = answers['reason']
     if answers['fourteen'] == 'No':
         no = "X"
-        answerNo = answers['explication']
+        answerNo = answers['reason']
     tablePollList = [
         [set_CNMS('EVENTO', 'white')],
         [set_NMS('1. El evento cubrió mis expectativas', 'black'), set_N('{}'.format(answers["one"]))],

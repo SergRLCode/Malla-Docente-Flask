@@ -38,24 +38,24 @@ class Course(db.Document):
 class Teacher(db.Document):
     teacher = 'Docente'
     admin = 'Administrador'
-    communication = 'Comunicacion'
+    communication = 'Comunicación'
     departamentBoss = 'Jefe de departamento'
     userType_choice = (
         (teacher, 'Docente'),
         (admin, 'Administrador'),
-        (communication, 'Comunicacion'),
+        (communication, 'Comunicación'),
         (departamentBoss, 'Jefe de departamento'),
     )
     departament_choice = (
         ("Ciencias Básicas", "Ciencias Básicas"),
-        ("Desarrollo Academico", "Desarrollo Academico"),
-        ("Economico Administrativo", "Economico Administrativo"),
-        ("Ingenierias", "Ingenierias"),
+        ("Desarrollo Académico", "Desarrollo Académico"),
+        ("Económico Administrativo", "Económico Administrativo"),
+        ("Ingenierías", "Ingenierías"),
         ("Industrial", "Industrial"),
-        ("Sistemas y Computacion", "Sistemas y Computacion")
+        ("Sistemas y Computación", "Sistemas y Computación")
     )
     # Personal Data
-    rfc = db.StringField(max_length=13, required=True)
+    rfc = db.StringField(max_length=13, required=True, unique=True)
     name = db.StringField()
     fstSurname = db.StringField()
     sndSurname = db.StringField()

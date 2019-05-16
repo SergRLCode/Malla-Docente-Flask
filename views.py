@@ -1,6 +1,6 @@
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
 from pdfs import assistantList, coursesList, inscription, pollDocument
-from models import Course, Teacher, LetterheadMetaData, Departament
+from models import Course, Teacher, LetterheadMetaData, Departament, BlacklistJWT
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
 from passlib.hash import pbkdf2_sha256 as sha256
@@ -12,7 +12,6 @@ from marsh import *
 def check_if_token_in_blacklist(decrypted_token):
     jti = decrypted_token['jti']
     identity = decrypted_token['identity']
-    print(identity)
     _jwt = BlacklistJWT.objects.all()
     for value in _jwt:
         if (jti==value['jwt']):
@@ -26,6 +25,11 @@ def login_user():
         teacher = Teacher.objects.get(rfc=data["rfc"])
         if sha256.verify(data["pin"], teacher["pin"]):
             jwtIdentity = teacher["rfc"]
+            try:
+                previousTkn = BlacklistJWT.objects.filter(identity=jwtIdentity).values_list('identity')
+                previousTkn.delete()
+            except:
+                pass
             access_token = create_access_token(identity = jwtIdentity, expires_delta=td(hours=1))
             refresh_token = create_refresh_token(identity = jwtIdentity)
             return jsonify({"data": {
@@ -69,6 +73,7 @@ def courses():
             return jsonify({"message": "Curso guardado."})
 # Seguir modificando Modelo
 @app.route('/course/<name>', methods=['GET', 'PUT', 'DELETE'])
+@jwt_required
 def course(name):
     try:
         course = Course.objects.get(courseName=name)
@@ -139,7 +144,7 @@ def teachers():
             userType = data["userType"],
             pin = sha256.hash(data["pin"])
         ).save()
-        return jsonify(data)
+        return jsonify({'message': 'Docente agregado'})
 
 @app.route('/teacher/<rfc>', methods=['GET', 'PUT', 'DELETE'])
 def getTeacher(rfc):
@@ -184,6 +189,7 @@ def coursesList_view():
             course["courseTo"]
         ])
     return coursesList(courses)
+
 # --> Lee esto: Lo estoy haciendo incorrectamente pero solo para prueba, porque el usuario no enviara su RFC, sino que por medio del JSON Web Token, se obtendra el RFC para obtener el documento <--
 # --> Lee esto: Lo estoy haciendo incorrectamente pero solo para prueba, porque el usuario no enviara su RFC, sino que por medio del JSON Web Token, se obtendra el RFC para obtener el documento <--
 # --> Lee esto: Lo estoy haciendo incorrectamente pero solo para prueba, porque el usuario no enviara su RFC, sino que por medio del JSON Web Token, se obtendra el RFC para obtener el documento <--
@@ -206,7 +212,6 @@ def getInscriptionDocument(name):
         else:
             return jsonify({"message":"error"})
             
-
 #  ==> --> In Develop <-- <==
 @app.route('/course/<name>/poll', methods=['POST'])
 @jwt_required
@@ -241,14 +246,22 @@ def teacher():
 @jwt_required
 def logout_user():
     _jwt = get_raw_jwt()['jti']
-    BlacklistJWT(jwt = _jwt).save()
+    _rfc = get_jwt_identity()
+    BlacklistJWT(
+        jwt = _jwt,
+        identity = _rfc
+    ).save()
     return jsonify({'message': 'Bye bye!'})
 
 @app.route('/logoutR', methods=['GET'])
 @jwt_refresh_token_required
 def logout_user2():
     _jwt = get_raw_jwt()['jti']
-    BlacklistJWT(jwt = _jwt).save()
+    _rfc = get_jwt_identity()
+    BlacklistJWT(
+        jwt = _jwt,
+        identity = _rfc
+    ).save()
     return jsonify({'message': 'Bye bye!'})
 
 @app.route('/addTeacherinCourse/<course_id>', methods=['POST'])
