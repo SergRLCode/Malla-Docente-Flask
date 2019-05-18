@@ -269,9 +269,6 @@ def change_password():
         data = request.get_json()
         teacher = Teacher.objects.get(rfc=get_jwt_identity())
         if(sha256.verify(data['pin'], teacher['pin'])):
-            attributes = ('rfc', 'name', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
-            for val in attributes:
-                teacher[val] = teacher[val]
             teacher['pin'] = sha256.hash(data['newPin'])
             teacher.save()
             return(jsonify({'message': 'Clave actualizada!'}), 200)
