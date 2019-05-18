@@ -262,17 +262,17 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
 def teacher():
     return jsonify({"message": "Hello {}".format(get_jwt_identity())})
 
-@app.route('/addTeacherinCourse/<course_id>', methods=['POST'])
-def addTeacherinCourse_view(course_id):
+@app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
+def addTeacherinCourse_view(course_name):
     if(request.method == 'POST'):
         data = request.get_json()
         try:
-            course = Course.objects.get(pk=course_id)   # Obtiene la informacion del curso seleccionado
+            course = Course.objects.get(courseName=course_name)   # Obtiene la informacion del curso seleccionado
         except Course.DoesNotExist:
             return(jsonify({"message": "Curso inexistente"}), 404)
         all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')   # Obtiene todos los RFC de los docentes excepto el docente que imparte el curso
         courseWillTeach = Course.objects.filter(teacherRFC=data['rfc']).values_list('timetable', 'dateStart', 'dateEnd', 'courseName')
-        restOfcourses = Course.objects.filter(pk__ne=course_id).values_list('teachersInCourse', 'courseName') # Obtiene las listas de docentes de los demas cursos
+        restOfcourses = Course.objects.filter(courseName__ne=course_name).values_list('teachersInCourse', 'courseName') # Obtiene las listas de docentes de los demas cursos
         if(data['rfc'] not in all_rfc): # Verifica que exista el RFC                                   
             return(jsonify({'message': 'RFC invalido.'}), 401)
         else:   # En caso de que SI exista...
