@@ -140,14 +140,26 @@ def getTeacher(rfc):                # Ruta para consultar uno en especifico, edi
         attributes = ('rfc', 'name', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
         data = request.get_json()
         for value in attributes:
-            teacher[value] = data[value]
-        teacher['pin'] = sha256.hash(data["pin"])        
+            teacher[value] = data[value]    
         teacher.save()
         return(jsonify({'message': 'Datos guardados.'}), 200)
     elif request.method == 'DELETE':
         advice = "{} eliminado".format(teacher.rfc)
         teacher.delete()
         return(jsonify({"message": advice}), 200)
+
+@app.route('/changePassword', methods=['POST'])
+@jwt_required
+def change_password():
+    if(request.method=='POST'):
+        data = request.get_json()
+        teacher = Teacher.objects.get(rfc=get_jwt_identity())
+        if(sha256.verify(data['pin'], teacher['pin'])):
+            teacher['pin'] = sha256.hash(data['newPin'])
+            teacher.save()
+            return(jsonify({'message': 'Clave actualizada!'}), 200)
+        else:
+            return(jsonify({'message': 'Clave previa incorrecta'}), 401)
 
 @app.route('/courses/coursesList', methods=['GET'])
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 
@@ -262,21 +274,8 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
 def teacher():
     return jsonify({"message": "Hello {}".format(get_jwt_identity())})
 
-@app.route('/changePassword', methods=['POST'])
-@jwt_required
-def change_password():
-    if(request.method=='POST'):
-        data = request.get_json()
-        teacher = Teacher.objects.get(rfc=get_jwt_identity())
-        if(sha256.verify(data['pin'], teacher['pin'])):
-            teacher['pin'] = sha256.hash(data['newPin'])
-            teacher.save()
-            return(jsonify({'message': 'Clave actualizada!'}), 200)
-        else:
-            return(jsonify({'message': 'Clave previa incorrecta'}), 401)
-
 @app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
-def addTeacherinCourse_view(course_name):
+def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente aceptado al curso seleccionado
     if(request.method == 'POST'):
         data = request.get_json()
         try:
@@ -284,20 +283,19 @@ def addTeacherinCourse_view(course_name):
         except Course.DoesNotExist:
             return(jsonify({"message": "Curso inexistente"}), 404)
         all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')   # Obtiene todos los RFC de los docentes excepto el docente que imparte el curso
-        courseWillTeach = Course.objects.filter(teacherRFC=data['rfc']).values_list('timetable', 'dateStart', 'dateEnd', 'courseName')
-        restOfcourses = Course.objects.filter(courseName__ne=course_name).values_list('teachersInCourse', 'courseName') # Obtiene las listas de docentes de los demas cursos
+        # restOfcourses = Course.objects.filter(courseName__ne=course_name).values_list('teachersInCourse', 'courseName') # Obtiene las listas de docentes de los demas cursos
         if(data['rfc'] not in all_rfc): # Verifica que exista el RFC                                   
             return(jsonify({'message': 'RFC invalido.'}), 401)
         else:   # En caso de que SI exista...
             if(data['rfc'] in course['teachersInCourse']):  # Verifica que el docente ya esta en la lista
                 return(jsonify({"message": "Docente agregado previamente."}), 200)
             else:   # Si no...
-                hoursCourseOne = course['timetable'].split('-')  # Una marihuanada
-                if len(courseWillTeach)>0:
-                    if(courseWillTeach[0][1] <= course['dateStart'] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course['dateEnd'] <= courseWillTeach[0][2]):
-                        hoursCourseTwo = courseWillTeach[0][0].split('-')
-                        if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
-                            return(jsonify({'message': 'Se empalma con la materia que imparte'}), 201)  
+                # hoursCourseOne = course['timetable'].split('-')  # Una marihuanada
+                # if len(courseWillTeach)>0:
+                #     if(courseWillTeach[0][1] <= course['dateStart'] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course['dateEnd'] <= courseWillTeach[0][2]):
+                #         hoursCourseTwo = courseWillTeach[0][0].split('-')
+                #         if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
+                #             return(jsonify({'message': 'Se empalma con la materia que imparte'}), 201)  
                 # for rfcsCourse in restOfcourses: # Itera sobre el array que contiene los array de docentes de cada curso
                 #     if data['rfc'] in rfcsCourse[0]:   # Si el docente ya esta en un curso...
                 #         coursesData = Course.objects.filter(teachersInCourse=rfcsCourse[0], courseName=rfcsCourse[1]).values_list('timetable', 'dateStart', 'dateEnd', 'courseName') # Obtiene los datos del curso
@@ -307,30 +305,66 @@ def addTeacherinCourse_view(course_name):
                 #             finalizacion del curso, no este entre las horas de otro de inicio y finalizacion del curso"""
                 #             if (hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1]) or (hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]): 
                 #                 return jsonify({'message': 'Se empalma con otro curso a tomar'})
+                courseRequest = RequestCourse.objects.get(course=course['courseName'])
+                courseRequest['requests'].remove(data['rfc'])
+                courseRequest.save()
                 if(course['teachersInCourse'] == ["No hay docentes registrados"]):
                     course['teachersInCourse'] = []
                 course['teachersInCourse'].append(data['rfc'])
                 course.save()
                 return(jsonify({'message': 'Docente agregado con exito.'}), 200)
 
+@app.route('/rejectTeacherOfCourse/<name>', methods=['POST'])
+def rejectTeacherOfCourse_view(name):       # Ruta que elimina el RFC del docente rechazado del curso
+    if(request.method == 'POST'):
+        data = request.get_json()
+        courseRequest = RequestCourse.objects.get(course=name)
+        if(data['rfc'] in courseRequest['requests']):
+            courseRequest['requests'].remove(data['rfc'])
+            courseRequest.save()
+            if(len(courseRequest['requests'])==0):
+                courseRequest.delete()
+            return(jsonify({'message': "Rechazado, asi como ella me rechazo a m :'v"}), 201)
+        else:
+            return(jsonify({'message': 'RFC inexistente'}), 500)
+
 @app.route('/courseRequest/<name>', methods=['GET'])
 @jwt_required
-def course_request(name):
-    course = Course.objects.filter(courseName=name).values_list('courseName')
+def course_request(name):           # Ruta en la cual el docente agrega su RFC para peticion de tomar un curso
+    course = Course.objects.filter(courseName=name).values_list('timetable', 'dateStart', 'dateEnd', 'courseName')
+    courseWillTeach = Course.objects.filter(teacherRFC=get_jwt_identity()).values_list('timetable', 'dateStart', 'dateEnd', 'courseName')    
     if len(course) == 0:
         return jsonify({'course': "Don't exists"})
-    else:
+    else:       # NOTA: preguntar hasta cuando se puede solicitar un curso
         try:
-            courseInRequest = RequestCourse.objects.get(course=course[0])
+            courseInRequest = RequestCourse.objects.get(course=course[0][3])
+            if get_jwt_identity() not in courseInRequest['requests']:
+                if len(courseWillTeach)>0:
+                    if(courseWillTeach[0][1] <= course[0][1] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course[0][2] <= courseWillTeach[0][2]):
+                        hoursCourseOne = course[0][0].split('-')  # Una marihuanada
+                        hoursCourseTwo = courseWillTeach[0][0].split('-')
+                        if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
+                            return(jsonify({'message': 'Se empalma con la materia que imparte'}), 401)  
+                courseInRequest["requests"].append(get_jwt_identity())
+                courseInRequest.save()
+                return(jsonify({'message': 'Solicitud enviada!'}), 200)
+            else:
+                return(jsonify({'message': 'Ya ha solicitado el curso.'}), 401)
         except:
+            if len(courseWillTeach)>0:
+                if(courseWillTeach[0][1] <= course[0][1] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course[0][2] <= courseWillTeach[0][2]):
+                    hoursCourseOne = course[0][0].split('-')  # Una marihuanada
+                    hoursCourseTwo = courseWillTeach[0][0].split('-')
+                    if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
+                        return(jsonify({'message': 'Se empalma con la materia que imparte'}), 401)  
             RequestCourse(
-                course = course[0],
-                requests = get_jwt_identity()
+                course = course[0][3],
+                requests = [get_jwt_identity()]
             ).save()
-            return jsonify({'message': 'Solicitud enviada!'})
+            return(jsonify({'message': 'Solicitud enviada!'}), 200)
 
 @app.route('/removeTeacherinCourse/<name>', methods=['POST'])
-def removeTeacherinCourse_view(name):
+def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso 
     if(request.method == 'POST'):
         data = request.get_json()
         try:
@@ -346,9 +380,8 @@ def removeTeacherinCourse_view(name):
         else:
             return jsonify({"message": "No existe en la lista"})
 
-# Only works to add meta data for each letterhead, next change will update meta data
 @app.route('/addInfo', methods=['GET', 'POST'])
-def addinfoView():
+def addinfoView():                      # Only works to add meta data for each letterhead, next change will update meta data
     if(request.method == 'GET'):
         info = LetterheadMetaData.objects.all()
         return jsonify(info)
@@ -362,9 +395,8 @@ def addinfoView():
         ).save()
         return jsonify({"message": "Added"})
 
-# Only works to add departament info for each letterhead, next change will update departament info
 @app.route('/addDepartament', methods=['GET', 'POST'])
-def adddepaView():
+def adddepaView():                      # Only works to add departament info for each letterhead, next change will update departament info
     if(request.method == 'GET'):
         info = Departament.objects.all()
         return jsonify(info)
