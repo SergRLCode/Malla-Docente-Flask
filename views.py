@@ -209,6 +209,22 @@ def getInscriptionDocument(name):
         else:
             return(jsonify({"message":"Ya esta en el curso"}), 401)
 
+@app.route('/course/<name>/poll', methods=['POST'])
+@jwt_required
+def poll_view(name):
+    if(request.method == 'POST'):
+        courseData = Course.objects.filter(courseName=name).values_list('courseName', 'teacherRFC', 'place', 'dateStart', 'dateEnd', 'totalHours', 'timetable', 'teachersInCourse')
+        if len(courseData)!=0:
+            if get_jwt_identity() in courseData[0][7]:
+                teacherThatTeach = Teacher.objects.filter(rfc=courseData[0][1]).values_list('name', 'fstSurname', 'sndSurname')
+                departament = Teacher.objects.filter(rfc=get_jwt_identity()).values_list('departament')
+                data = request.get_json()
+                return(pollDocument(data, courseData, teacherThatTeach, departament[0]), 200)
+            else:
+                return(jsonify({'message': 'Curso no registrado.'}), 404)
+        else:
+            return(jsonify({'message': 'Curso inexistente.'}), 404)
+
 @app.route('/logoutA', methods=['GET'])
 @jwt_required
 def logout_user():
@@ -239,21 +255,6 @@ def logout_user2():
     return(jsonify({'message': 'Bye bye!'}), 200)
             
 #  ==> --> In Develop <-- <==
-@app.route('/course/<name>/poll', methods=['POST'])
-@jwt_required
-def poll_view(name):
-    courseData = Course.objects.filter(courseName=name).values_list('courseName', 'teacherRFC', 'place', 'dateStart', 'dateEnd', 'totalHours', 'timetable', 'teachersInCourse')
-    if len(courseData)!=0:
-        if get_jwt_identity() in courseData[0][7]:
-            teacherThatTeach = Teacher.objects.filter(rfc=courseData[0][1]).values_list('name', 'fstSurname', 'sndSurname')
-            departament = Teacher.objects.filter(rfc=get_jwt_identity()).values_list('departament')
-            if(request.method == 'POST'):
-                data = request.get_json()
-                return(pollDocument(data, courseData, teacherThatTeach, departament[0]), 200)
-        else:
-            return(jsonify({'message': 'Curso no registrado.'}), 404)
-    else:
-        return(jsonify({'message': 'Curso inexistente.'}), 404)
 
 # Example of route with JWT 
 @app.route('/pull')
