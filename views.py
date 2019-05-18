@@ -262,6 +262,22 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
 def teacher():
     return jsonify({"message": "Hello {}".format(get_jwt_identity())})
 
+@app.route('/changePassword', methods=['POST'])
+@jwt_required
+def change_password():
+    if(request.method=='POST'):
+        data = request.get_json()
+        teacher = Teacher.objects.get(rfc=get_jwt_identity())
+        if(sha256.verify(data['pin'], teacher['pin'])):
+            attributes = ('rfc', 'name', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
+            for val in attributes:
+                teacher[val] = teacher[val]
+            teacher['pin'] = sha256.hash(data['newPin'])
+            teacher.save()
+            return(jsonify({'message': 'Clave actualizada!'}), 200)
+        else:
+            return(jsonify({'message': 'Clave previa incorrecta'}), 401)
+
 @app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
 def addTeacherinCourse_view(course_name):
     if(request.method == 'POST'):
