@@ -73,6 +73,10 @@ class Teacher(db.Document):
     userType = db.StringField(choices=userType_choice)
     pin = db.StringField()
     
+class RequestCourse(db.Document):
+    course = db.StringField()
+    requests = db.ListField(db.StringField())
+
 class Departament(db.Document):
     name = db.StringField()
     boss = db.StringField()

@@ -1,6 +1,6 @@
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
 from pdfs import assistantList, coursesList, inscription, pollDocument
-from models import Course, Teacher, LetterheadMetaData, Departament, BlacklistJWT
+from models import Course, Teacher, LetterheadMetaData, Departament, BlacklistJWT, RequestCourse
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
 from passlib.hash import pbkdf2_sha256 as sha256
@@ -32,15 +32,15 @@ def login_user():
                 pass
             access_token = create_access_token(identity = jwtIdentity, expires_delta=td(hours=1))
             refresh_token = create_refresh_token(identity = jwtIdentity)
-            return jsonify({"data": {
+            return (jsonify({"data": {
                 'message': 'Logged in as {} {} {}'.format(teacher["name"], teacher["fstSurname"], teacher["sndSurname"]),
                 'access_token': access_token,
                 'refresh_token': refresh_token
-            }})
+            }}), 200)
         else:
-            return jsonify({"data": {"message": "NIP incorrecto"}})
+            return(jsonify({"data": {"message": "NIP incorrecto"}}), 401)
     except Teacher.DoesNotExist:
-        return jsonify({"data": {"message": "Docente no registrado"}})
+        return(jsonify({"data": {"message": "Docente no registrado"}}), 404)
 
 @app.route('/courses', methods=['GET', 'POST'])
 @jwt_required
@@ -302,12 +302,28 @@ def addTeacherinCourse_view(course_id):
                 course.save()
                 return jsonify({'message': 'Docente agregado con exito.'})
 
-@app.route('/removeTeacherinCourse/<course_id>', methods=['POST'])
-def removeTeacherinCourse_view(course_id):
+@app.route('/courseRequest/<name>', methods=['GET'])
+@jwt_required
+def course_request(name):
+    course = Course.objects.filter(courseName=name).values_list('courseName')
+    if len(course) == 0:
+        return jsonify({'course': "Don't exists"})
+    else:
+        try:
+            courseInRequest = RequestCourse.objects.get(course=course[0])
+        except:
+            RequestCourse(
+                course = course[0],
+                requests = get_jwt_identity()
+            ).save()
+            return jsonify({'message': 'Solicitud enviada!'})
+
+@app.route('/removeTeacherinCourse/<name>', methods=['POST'])
+def removeTeacherinCourse_view(name):
     if(request.method == 'POST'):
         data = request.get_json()
         try:
-            course = Course.objects.get(pk=course_id)
+            course = Course.objects.get(courseName=name)
         except Course.DoesNotExist:
             return jsonify({"message": "Curso inexistente"})
         if(data['rfc'] in course['teachersInCourse']):
