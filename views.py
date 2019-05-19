@@ -324,7 +324,7 @@ def rejectTeacherOfCourse_view(name):       # Ruta que elimina el RFC del docent
             courseRequest.save()
             if(len(courseRequest['requests'])==0):
                 courseRequest.delete()
-            return(jsonify({'message': "Rechazado, asi como ella me rechazo a m :'v"}), 201)
+            return(jsonify({'message': "Rechazado, asi como ella me rechazo a mi :'v"}), 201)
         else:
             return(jsonify({'message': 'RFC inexistente'}), 500)
 
@@ -334,7 +334,7 @@ def course_request(name):           # Ruta en la cual el docente agrega su RFC p
     course = Course.objects.filter(courseName=name).values_list('timetable', 'dateStart', 'dateEnd', 'courseName')
     courseWillTeach = Course.objects.filter(teacherRFC=get_jwt_identity()).values_list('timetable', 'dateStart', 'dateEnd', 'courseName')    
     if len(course) == 0:
-        return jsonify({'course': "Don't exists"})
+        return(jsonify({'course': "Don't exists"}), 401)
     else:       # NOTA: preguntar hasta cuando se puede solicitar un curso
         try:
             courseInRequest = RequestCourse.objects.get(course=course[0][3])
@@ -370,15 +370,15 @@ def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso
         try:
             course = Course.objects.get(courseName=name)
         except Course.DoesNotExist:
-            return jsonify({"message": "Curso inexistente"})
+            return(jsonify({"message": "Curso inexistente"}), 401)
         if(data['rfc'] in course['teachersInCourse']):
             course['teachersInCourse'].remove(data['rfc'])
             if not course['teachersInCourse']:
                 course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
             course.save()
-            return jsonify({"message": "Docente dado de baja exitosamente"})
+            return(jsonify({"message": "Docente dado de baja exitosamente"}), 200)
         else:
-            return jsonify({"message": "No existe en la lista"})
+            return(jsonify({"message": "No existe en la lista"}), 401)
 
 @app.route('/addInfo', methods=['GET', 'POST'])
 def addinfoView():                      # Only works to add meta data for each letterhead, next change will update meta data
@@ -393,7 +393,7 @@ def addinfoView():                      # Only works to add meta data for each l
             version = data['version'],
             emitDate = data['emitDate']
         ).save()
-        return jsonify({"message": "Added"})
+        return(jsonify({"message": "Added"}), 200)
 
 @app.route('/addDepartament', methods=['GET', 'POST'])
 def adddepaView():                      # Only works to add departament info for each letterhead, next change will update departament info
@@ -406,7 +406,7 @@ def adddepaView():                      # Only works to add departament info for
             name = data["name"],
             boss = data["boss"]
         ).save()
-        return jsonify({"message": "Added"})
+        return(jsonify({"message": "Added"}), 200)
 
 @app.errorhandler(404)
 def page_not_found(error):
