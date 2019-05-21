@@ -15,7 +15,7 @@ db = MongoEngine(app)
 jwt = JWTManager(app)
 CORS(app)
 
-from views import *
+from routes import *
 
 if __name__ == '__main__':
    app.run(debug=True)
