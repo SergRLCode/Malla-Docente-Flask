@@ -103,6 +103,17 @@ def courses():                      # Ruta para agregar un curso o consultar tod
             ).save()
             return(jsonify({"message": "Curso guardado."}), 200)
 
+@app.route('/availableCourses', methods=['GET'])
+def available_courses():
+    if(request.method=='GET'):
+        availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC')
+        arrayToSend = []
+        for vals in availableCourses:
+            teacherName = Teacher.objects.filter(rfc=vals[1]).values_list('name', 'fstSurname', 'sndSurname')
+            completeName = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
+            arrayToSend.append({'courseName': vals[0], 'teacherName': completeName})
+        return(jsonify({'message': arrayToSend}), 200)
+
 @app.route('/course/<name>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required
 def course(name):                   # Ruta para consultar uno en especifico, editar info de un curso en especifico o borrar ese curso en especifico
