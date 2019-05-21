@@ -104,7 +104,7 @@ def courses():                      # Ruta para agregar un curso o consultar tod
             return(jsonify({"message": "Curso guardado."}), 200)
 
 @app.route('/availableCourses', methods=['GET'])
-def available_courses():
+def available_courses():            # Ruta que retorna una lista con los cursos disponibles, siendo el dia de inicio mayor a la fecha del servidor
     if(request.method=='GET'):
         availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC')
         arrayToSend = []
