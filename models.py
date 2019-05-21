@@ -3,19 +3,18 @@ from app import db, app
 import datetime
 
 class Course(db.Document):
-    Online = 'Virtual'
-    Presential = 'Presencial'
     modality_choice = (
-        (Online, 'Virtual'),
-        (Presential, 'Presencial'),
+        ('Virtual', 'Virtual'),
+        ('Presencial', 'Presencial'),
     )
-    Finished = 'Terminado'
-    OnCourse = 'Cursando'
-    ToStart = 'Por empezar'
     state_choice = (
-        (Finished, 'Terminado'),
-        (OnCourse, 'Cursando'),
-        (ToStart, 'Por empezar'),
+        ('Terminado', 'Terminado'),
+        ('Cursando', 'Cursando'),
+        ('Por empezar', 'Por empezar'),
+    )
+    type_choice = (
+        ('Docente', 'Docente'),
+        ('Profesional', 'Profesional'),
     )
     # Inscription Data
     courseName = db.StringField(required=True)
@@ -30,28 +29,25 @@ class Course(db.Document):
     description = db.StringField()
     totalHours = db.IntField()
     courseTo = db.StringField()
+    typeCourse = db.StringField()
     # Assistant List Data
     serial = db.IntField()
     # Status
-    state = db.StringField(choices=state_choice)
+    state = db.StringField(choices=state_choice, default='Por empezar')
 
 class Teacher(db.Document):
-    teacher = 'Docente'
-    admin = 'Administrador'
-    communication = 'Comunicación'
-    departamentBoss = 'Jefe de departamento'
     userType_choice = (
-        (teacher, 'Docente'),
-        (admin, 'Administrador'),
-        (communication, 'Comunicación'),
-        (departamentBoss, 'Jefe de departamento'),
+        ('Docente', 'Docente'),
+        ('Administrador', 'Administrador'),
+        ('Comunicación', 'Comunicación'),
+        ('Jefe de departamento', 'Jefe de departamento'),
     )
     departament_choice = (
         ("Ciencias Básicas", "Ciencias Básicas"),
         ("Desarrollo Académico", "Desarrollo Académico"),
         ("Económico Administrativo", "Económico Administrativo"),
         ("Ingenierías", "Ingenierías"),
-        ("Industrial", "Industrial"),
+        ("Ingeniería Industrial", "Ingeniería Industrial"),
         ("Sistemas y Computación", "Sistemas y Computación")
     )
     # Personal Data
@@ -90,6 +86,10 @@ class LetterheadMetaData(db.Document):
 class BlacklistJWT(db.Document):
     jwt = db.StringField(unique = True)
     identity = db.StringField()
+
+class BlacklistRequest(db.Document):
+    course = db.StringField()
+    requests = db.ListField(db.StringField())
 
 # python3, reserved word "dir", pa ver metodos
 

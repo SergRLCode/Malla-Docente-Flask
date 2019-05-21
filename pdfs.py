@@ -11,7 +11,7 @@ from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from io import StringIO, BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta as td
 from pdfStyles import *
 # Dict for metadata to landscapeLetterhead
 metaData = {
@@ -122,8 +122,8 @@ def assistantList(teachers, courseTeacher, course):
         ['MODALIDAD: ', 'PRESENCIAL(' + presential + ')', 'VIRTUAL(' + virtual + ')']
     ]
     arrayDays = []
-    for x in range(course["dateStart"].day, course["dateEnd"].day+1):
-        arrayDays.append(x)
+    for x in range(0, (course['dateEnd'] - course['dateStart']+td(days=1)).days):
+        arrayDays.append((course['dateStart']+td(days=x)).day)
     tableDataTeacherList = [
         ['No.', 'NOMBRE DEL PARTICIPANTE', 'R.F.C.', 'DEPARTAMENTO ACADÉMICO', set_N('CUMPLIMIENTO DE ACTIVIDADES'), 'ASISTENCIA'],
         ['', '', '', '', '', 'L', 'M', 'M', 'J', 'V'],
