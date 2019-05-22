@@ -418,10 +418,26 @@ def data_con():
         for val in range(0, len(depTeacherNum)):
             depPercentDocentProf[val] = "{0:.2f}%".format((depDocentProfesionalNum[val]*100)/depTeacherNum[val])
         # Docentes que tomaron algun curso
-
+        capacitados = [0, 0, 0, 0, 0, 0]
+        for rfc in all_rfc:
+            department = Teacher.objects.filter(rfc=rfc).values_list('departament')
+            isInCourse = Course.objects.filter(teachersInCourse__contains=rfc)
+            if(len(isInCourse)>0):
+                if(department[0]=='Ciencias Básicas'):
+                    capacitados[0]+=1
+                elif(department[0]=='Económico-Administrativo'):
+                    capacitados[1]+=1
+                elif(department[0]=='Ingenierías'):
+                    capacitados[2]+=1                    
+                elif(department[0]=='Ingeniería Industrial'):
+                    capacitados[3]+=1
+                elif(department[0]=='Sistemas y Computación'):
+                    capacitados[4]+=1
+                capacitados[5]+=1
+        # Porcentaje del departamento
         # Docentes que no tomaron nada
-
-        return(concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf), 200)
+        # Porcentaje del departamento
+        return(concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados), 200)
 
 #  ==> --> In Develop <-- <==
 
