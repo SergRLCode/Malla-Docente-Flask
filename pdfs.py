@@ -5,13 +5,13 @@ from reportlab.platypus.flowables import KeepTogether
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.styles import ParagraphStyle
+from datetime import datetime, timedelta as td
 from flask import make_response, send_file
 from models import LetterheadMetaData
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from io import StringIO, BytesIO
-from datetime import datetime, timedelta as td
 from pdfStyles import *
 # Dict for metadata to landscapeLetterhead
 metaData = {
@@ -237,7 +237,7 @@ def inscription(teacher, departament, course, teacherWillTeach):
     lic = maes = dr = otro = otrotxt = ""
     if(teacher['studyLevel']=='Licenciatura'):
         lic = 'X'
-    elif(teacher['studyLevel']=='Maestria'):
+    elif(teacher['studyLevel']=='Maestría'):
         maes = 'X'
     elif(teacher['studyLevel']=='Doctorado'):
         dr = 'X'
@@ -449,3 +449,33 @@ def pollDocument(answers, courseData, teacher, departament):
     story.append(Spacer(1, inch/4))
     story.append(tableDate)
     return returnPDF(story, "encuesta", letter, 85)
+
+def concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf):
+    output = BytesIO()
+    doc = SimpleDocTemplate(output, pagesize=landscape(letter), topMargin=30, bottomMargin=50)
+    tableTitleList = [
+        ['PROGRAMA INSTITUCIONAL DE FORMACIÓN Y ACTUALIZACIÓN DOCENTE Y PROFESIONAL']
+    ]
+    tableContentList = [
+        ['DEPARTAMENTO', 'TOTAL DE DOCENTES', 'DOCENTE', '%', 'PROFESIONAL', '%', 'AMBAS', '%'],
+        [depName[0], depTeacherNum[0], depDocenteNum[0], depPercentDocent[0], depProfesionalNum[0], depPercentProfesional[0], depDocentProfesionalNum[0], depPercentDocentProf[0]],
+        [depName[1], depTeacherNum[1], depDocenteNum[1], depPercentDocent[1], depProfesionalNum[1], depPercentProfesional[1], depDocentProfesionalNum[1], depPercentDocentProf[1]],
+        [depName[2], depTeacherNum[2], depDocenteNum[2], depPercentDocent[2], depProfesionalNum[2], depPercentProfesional[2], depDocentProfesionalNum[2], depPercentDocentProf[2]],
+        [depName[3], depTeacherNum[3], depDocenteNum[3], depPercentDocent[3], depProfesionalNum[3], depPercentProfesional[3], depDocentProfesionalNum[3], depPercentDocentProf[3]],
+        [depName[4], depTeacherNum[4], depDocenteNum[4], depPercentDocent[4], depProfesionalNum[4], depPercentProfesional[4], depDocentProfesionalNum[4], depPercentDocentProf[4]],
+        ['TOTAL', depTeacherNum[5], depDocenteNum[5], depPercentDocent[5], depProfesionalNum[5], depPercentProfesional[5], depDocentProfesionalNum[5], depPercentDocentProf[5]]
+    ]
+    tableTitle = Table(tableTitleList)
+    tableContent = Table(tableContentList, style = [
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black)
+    ], rowHeights=(20, 15, 15, 15, 15, 15, 20))
+    story=[]
+    story.append(tableTitle)
+    story.append(tableContent)
+    doc.build(story)
+    pdf_out=output.getvalue()
+    output.close()
+    response = make_response(pdf_out)
+    response.headers['Content-Disposition'] = "attachment; filename=Concentrado.pdf"
+    response.headers['Content-Type'] = 'application/pdf'
+    return(response)    

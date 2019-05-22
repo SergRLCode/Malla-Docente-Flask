@@ -1,5 +1,5 @@
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
-from pdfs import assistantList, coursesList, inscription, pollDocument
+from pdfs import assistantList, coursesList, inscription, pollDocument, concentrated
 from models import Course, Teacher, LetterheadMetaData, Departament, BlacklistJWT, RequestCourse, BlacklistRequest
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
@@ -74,7 +74,7 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
     return(jsonify({'message': 'Bye bye!'}), 200)
 
 @app.route('/courses', methods=['GET', 'POST'])
-@jwt_required
+# @jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
         all_courses = Course.objects.filter()
@@ -104,6 +104,7 @@ def courses():                      # Ruta para agregar un curso o consultar tod
             return(jsonify({"message": "Curso guardado."}), 200)
 
 @app.route('/availableCourses', methods=['GET'])
+@jwt_required
 def available_courses():            # Ruta que retorna una lista con los cursos disponibles, siendo el dia de inicio mayor a la fecha del servidor
     if(request.method=='GET'):
         availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC')
@@ -115,7 +116,7 @@ def available_courses():            # Ruta que retorna una lista con los cursos 
         return(jsonify({'message': arrayToSend}), 200)
 
 @app.route('/course/<name>', methods=['GET', 'PUT', 'DELETE'])
-@jwt_required
+# @jwt_required
 def course(name):                   # Ruta para consultar uno en especifico, editar info de un curso en especifico o borrar ese curso en especifico
     try:
         course = Course.objects.get(courseName=name)
@@ -158,33 +159,40 @@ def edit_serial(course):            # Ruta para cambio de FOLIO
         return(jsonify({'message': 'Cambios guardados!'}), 200)
 
 @app.route('/teachers', methods=['GET', 'POST'])
-@jwt_required
+# @jwt_required
 def teachers():                     # Ruta para agregar un docente o consultar todos
     if (request.method == 'GET'):
         all_teachers = Teacher.objects.all()
         return(jsonify(all_teachers), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
-        Teacher(
-            rfc = data["rfc"],
-            name = data["name"],
-            fstSurname = data["fstSurname"],
-            sndSurname = data["sndSurname"],
-            numberPhone = data["numberPhone"],
-            email = data["email"],
-            studyLevel = data["studyLevel"],
-            degree = data["degree"],
-            speciality = data["speciality"],
-            departament = data["departament"],
-            schedule = data["schedule"],
-            position = data["position"],
-            userType = data["userType"],
-            pin = sha256.hash(data["pin"])
-        ).save()
-        return(jsonify({'message': 'Docente agregado'}), 200)
+        try:
+            departament = Departament.objects.get(name=data['departament'])
+            try:
+                Teacher(
+                    rfc = data["rfc"],
+                    name = data["name"],
+                    fstSurname = data["fstSurname"],
+                    sndSurname = data["sndSurname"],
+                    numberPhone = data["numberPhone"],
+                    email = data["email"],
+                    studyLevel = data["studyLevel"],
+                    degree = data["degree"],
+                    speciality = data["speciality"],
+                    departament = data["departament"],
+                    schedule = data["schedule"],
+                    position = data["position"],
+                    userType = data["userType"],
+                    pin = sha256.hash(data["pin"])
+                ).save()
+            except:
+                return(jsonify({'message': 'Docente previamente registrado'}), 401)
+            return(jsonify({'message': 'Docente agregado'}), 200)
+        except:
+            return(jsonify({'message': 'Departamento invalido'}), 404)
 
 @app.route('/teacher/<rfc>', methods=['GET', 'PUT', 'DELETE'])
-@jwt_required
+# @jwt_required
 def teacher(rfc):                # Ruta para consultar uno en especifico, editar info de un docente en especifico o borrar ese docente en especifico
     try:
         teacher = Teacher.objects.get(rfc=rfc)
@@ -235,7 +243,7 @@ def my_courses():                    # Regresa todos los cursos en los que se ha
             return(jsonify({'message': 'No esta registrado en ningun curso'}), 404)
 
 @app.route('/courses/coursesList', methods=['GET'])
-@jwt_required
+# @jwt_required
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 
     all_courses = Course.objects.all()
     if len(all_courses)!=0:
@@ -316,6 +324,105 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
         else:
             return(jsonify({'message': 'Curso inexistente.'}), 404)
             
+@app.route('/dataConcentrated', methods=['GET'])
+def data_con():
+    if(request.method=='GET'):
+        # Nombres de los cursos
+        depName = []
+        totaldepTeacherNum = 0
+        departaments = Departament.objects.all()
+        for departament in departaments:
+            depName.append(departament['name'])
+        depName.remove('Desarrollo Académico')
+        # Docentes por departamento
+        depTeacherNum = []
+        for val in depName:
+            teacher = Teacher.objects.filter(departament=val)
+            depTeacherNum.append(len(teacher))
+            totaldepTeacherNum += len(teacher)
+        depTeacherNum.append(totaldepTeacherNum)
+        # Docentes que tomaron capacitacion docente
+        depDocenteNum = [0, 0, 0, 0, 0, 0]
+        rfcsCourse = Course.objects.filter(typeCourse='Docente').values_list('teachersInCourse')
+        for rfcs in rfcsCourse:
+            for rfc in rfcs:
+                getDep = Teacher.objects.filter(rfc=rfc).values_list('departament')
+                if(getDep[0]=='Ciencias Básicas'):
+                    depDocenteNum[0]+=1
+                elif(getDep[0]=='Económico-Administrativo'):
+                    depDocenteNum[1]+=1
+                elif(getDep[0]=='Ingenierías'):
+                    depDocenteNum[2]+=1                    
+                elif(getDep[0]=='Ingeniería Industrial'):
+                    depDocenteNum[3]+=1
+                elif(getDep[0]=='Sistemas y Computación'):
+                    depDocenteNum[4]+=1
+                depDocenteNum[5]+=1
+        # Porcentaje del departamento
+        depPercentDocent = [0, 0, 0, 0, 0, 0]
+        for val in range(0, len(depTeacherNum)):
+            depPercentDocent[val] = "{0:.2f}%".format((depDocenteNum[val]*100)/depTeacherNum[val])
+        # Docentes que tomaron actualizacion profesional
+        depProfesionalNum = [0, 0, 0, 0, 0, 0]
+        rfcsCourse = Course.objects.filter(typeCourse='Profesional').values_list('teachersInCourse')
+        for rfcs in rfcsCourse:
+            for rfc in rfcs:
+                getDep = Teacher.objects.filter(rfc=rfc).values_list('departament')
+                if(getDep[0]=='Ciencias Básicas'):
+                    depProfesionalNum[0]+=1
+                elif(getDep[0]=='Económico-Administrativo'):
+                    depProfesionalNum[1]+=1
+                elif(getDep[0]=='Ingenierías'):
+                    depProfesionalNum[2]+=1                    
+                elif(getDep[0]=='Ingeniería Industrial'):
+                    depProfesionalNum[3]+=1
+                elif(getDep[0]=='Sistemas y Computación'):
+                    depProfesionalNum[4]+=1
+                depProfesionalNum[5]+=1
+        # Porcentaje del departamento
+        depPercentProfesional = [0, 0, 0, 0, 0, 0]
+        for val in range(0, len(depTeacherNum)):
+            depPercentProfesional[val] = "{0:.2f}%".format((depProfesionalNum[val]*100)/depTeacherNum[val])
+        # Docentes que tomaron ambas
+        depDocentProfesionalNum = [0, 0, 0, 0, 0, 0]
+        courseDocente = Course.objects.filter(typeCourse='Docente').values_list('teachersInCourse')
+        courseProfesional = Course.objects.filter(typeCourse='Profesional').values_list('teachersInCourse')
+        teachers = Teacher.objects.all()
+        all_rfc = []
+        for val in teachers:
+            all_rfc.append(val['rfc'])
+        rfcCourse_docente = []
+        rfcCourse_profesional = []
+        for rfcs in courseDocente:
+            for val in rfcs:
+                rfcCourse_docente.append(val)
+        for rfcs in courseProfesional:
+            for val in rfcs:
+                rfcCourse_profesional.append(val)
+        for rfc in all_rfc:
+            if(rfc in rfcCourse_docente and rfc in rfcCourse_profesional):
+                depa = Teacher.objects.filter(rfc=rfc).values_list('departament')
+                if(depa[0]=='Ciencias Básicas'):
+                    depDocentProfesionalNum[0]+=1
+                elif(depa[0]=='Económico-Administrativo'):
+                    depDocentProfesionalNum[1]+=1
+                elif(depa[0]=='Ingenierías'):
+                    depDocentProfesionalNum[2]+=1                    
+                elif(depa[0]=='Ingeniería Industrial'):
+                    depDocentProfesionalNum[3]+=1
+                elif(depa[0]=='Sistemas y Computación'):
+                    depDocentProfesionalNum[4]+=1
+                depDocentProfesionalNum[5]+=1
+        # Porcentaje del departamento
+        depPercentDocentProf = [0, 0, 0, 0, 0, 0]
+        for val in range(0, len(depTeacherNum)):
+            depPercentDocentProf[val] = "{0:.2f}%".format((depDocentProfesionalNum[val]*100)/depTeacherNum[val])
+        # Docentes que tomaron algun curso
+
+        # Docentes que no tomaron nada
+
+        return(concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf), 200)
+
 #  ==> --> In Develop <-- <==
 
 # Example of route with JWT 
@@ -397,7 +504,7 @@ def rejectTeacherOfCourse_view(name):       # Ruta que elimina el RFC del docent
 def course_request(name):           # Ruta en la cual el docente agrega su RFC para peticion de tomar un curso
     course = Course.objects.filter(courseName=name).values_list('timetable', 'dateStart', 'dateEnd', 'courseName', 'teacherRFC')
     courseWillTeach = Course.objects.filter(teacherRFC=get_jwt_identity()).values_list('timetable', 'dateStart', 'dateEnd', 'courseName', 'teacherRFC')
-    requestedAlready = Course.objects.filter(teachersInCourse__contains=get_jwt_identity())
+    requestedAlready = Course.objects.filter(courseName=name, teachersInCourse__contains=get_jwt_identity())
     blacklisted = BlacklistRequest.objects.filter(course=name)
     if(len(blacklisted)>0):                                                       # checa que no este en la blacklist
         return(jsonify({'message': 'Ya no puede solicitar el curso'}), 401)
@@ -468,7 +575,7 @@ def addinfoView():                      # Only works to add meta data for each l
         ).save()
         return(jsonify({"message": "Added"}), 200)
 
-@app.route('/addDepartament', methods=['GET', 'POST'])
+@app.route('/departament', methods=['GET', 'POST'])
 def adddepaView():                      # Only works to add departament info for each letterhead, next change will update departament info
     if(request.method == 'GET'):
         info = Departament.objects.all()
@@ -481,10 +588,23 @@ def adddepaView():                      # Only works to add departament info for
         ).save()
         return(jsonify({"message": "Added"}), 200)
 
+@app.route('/departament/<name>', methods=['PUT'])
+def departament_view(name):
+    try:
+        dep = Departament.objects.get(name=name)
+        data=request.get_json()
+    except:
+        return(jsonify({'message': "Don't exists"}), 404)
+    if(request.method=='PUT'):
+        dep['name'] = data['name']
+        dep['boss'] = data['boss']
+        dep.save()
+        return(jsonify({'message': 'Success!'}), 200)
+
 @app.errorhandler(404)
 def page_not_found(error):
     error = {
         "errorType": "404",
         "message": "Pagina no encontrada"
     }
-    return(jsonify(error),404)
+    return(jsonify(error), 404)

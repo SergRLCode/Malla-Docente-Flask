@@ -45,7 +45,7 @@ class Teacher(db.Document):
     departament_choice = (
         ("Ciencias Básicas", "Ciencias Básicas"),
         ("Desarrollo Académico", "Desarrollo Académico"),
-        ("Económico Administrativo", "Económico Administrativo"),
+        ("Económico-Administrativo", "Económico-Administrativo"),
         ("Ingenierías", "Ingenierías"),
         ("Ingeniería Industrial", "Ingeniería Industrial"),
         ("Sistemas y Computación", "Sistemas y Computación")
