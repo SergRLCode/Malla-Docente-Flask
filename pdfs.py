@@ -2,7 +2,8 @@
 
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Image, PageTemplate, Spacer, Paragraph
 from reportlab.platypus.flowables import KeepTogether
-from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.pagesizes import letter, landscape, legal
+from reportlab.lib import pagesizes
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.styles import ParagraphStyle
 from datetime import datetime, timedelta as td
@@ -13,6 +14,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from io import StringIO, BytesIO
 from pdfStyles import *
+
 # Dict for metadata to landscapeLetterhead
 metaData = {
     "nameDocument": "",
@@ -450,28 +452,38 @@ def pollDocument(answers, courseData, teacher, departament):
     story.append(tableDate)
     return returnPDF(story, "encuesta", letter, 85)
 
-def concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados):
+def concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados, depPercentYesCoursed, noCapacitados, depPercentNoCoursed, totalCourses):
     output = BytesIO()
-    doc = SimpleDocTemplate(output, pagesize=landscape(letter), topMargin=30, bottomMargin=50)
+    doc = SimpleDocTemplate(output, pagesize=landscape(legal), topMargin=30, bottomMargin=50)
     tableTitleList = [
         ['PROGRAMA INSTITUCIONAL DE FORMACIÓN Y ACTUALIZACIÓN DOCENTE Y PROFESIONAL']
     ]
     tableContentList = [
-        ['DEPARTAMENTO', 'TOTAL DE DOCENTES', 'DOCENTE', '%', 'PROFESIONAL', '%', 'AMBAS', '%', 'CAPACITADOS'],
-        [depName[0], depTeacherNum[0], depDocenteNum[0], depPercentDocent[0], depProfesionalNum[0], depPercentProfesional[0], depDocentProfesionalNum[0], depPercentDocentProf[0], capacitados[0]],
-        [depName[1], depTeacherNum[1], depDocenteNum[1], depPercentDocent[1], depProfesionalNum[1], depPercentProfesional[1], depDocentProfesionalNum[1], depPercentDocentProf[1], capacitados[1]],
-        [depName[2], depTeacherNum[2], depDocenteNum[2], depPercentDocent[2], depProfesionalNum[2], depPercentProfesional[2], depDocentProfesionalNum[2], depPercentDocentProf[2], capacitados[2]],
-        [depName[3], depTeacherNum[3], depDocenteNum[3], depPercentDocent[3], depProfesionalNum[3], depPercentProfesional[3], depDocentProfesionalNum[3], depPercentDocentProf[3], capacitados[3]],
-        [depName[4], depTeacherNum[4], depDocenteNum[4], depPercentDocent[4], depProfesionalNum[4], depPercentProfesional[4], depDocentProfesionalNum[4], depPercentDocentProf[4], capacitados[4]],
-        ['TOTAL', depTeacherNum[5], depDocenteNum[5], depPercentDocent[5], depProfesionalNum[5], depPercentProfesional[5], depDocentProfesionalNum[5], depPercentDocentProf[5], capacitados[5]]
+        [set_CNMS('DEPARTAMENTO', 'black'), set_CNMS('TOTAL DE DOCENTES', 'black'), set_CNMS('DOCENTE', 'black'), set_CNMS('%', 'black'), set_CNMS('PROFESIONAL', 'black'), set_CNMS('%', 'black'), set_CNMS('AMBAS', 'black'), set_CNMS('%', 'black'), set_CNMS('DOCENTES CAPACITADOS', 'black'), set_CNMS('%', 'black'), set_CNMS('DOCENTES NO CAPACITADOS', 'black'), set_CNMS('%', 'black')],
+        [depName[0], depTeacherNum[0], depDocenteNum[0], depPercentDocent[0], depProfesionalNum[0], depPercentProfesional[0], depDocentProfesionalNum[0], depPercentDocentProf[0], capacitados[0], depPercentYesCoursed[0], noCapacitados[0], depPercentNoCoursed[0]],
+        [depName[1], depTeacherNum[1], depDocenteNum[1], depPercentDocent[1], depProfesionalNum[1], depPercentProfesional[1], depDocentProfesionalNum[1], depPercentDocentProf[1], capacitados[1], depPercentYesCoursed[1], noCapacitados[1], depPercentNoCoursed[1]],
+        [depName[2], depTeacherNum[2], depDocenteNum[2], depPercentDocent[2], depProfesionalNum[2], depPercentProfesional[2], depDocentProfesionalNum[2], depPercentDocentProf[2], capacitados[2], depPercentYesCoursed[2], noCapacitados[2], depPercentNoCoursed[2]],
+        [depName[3], depTeacherNum[3], depDocenteNum[3], depPercentDocent[3], depProfesionalNum[3], depPercentProfesional[3], depDocentProfesionalNum[3], depPercentDocentProf[3], capacitados[3], depPercentYesCoursed[3], noCapacitados[3], depPercentNoCoursed[3]],
+        [depName[4], depTeacherNum[4], depDocenteNum[4], depPercentDocent[4], depProfesionalNum[4], depPercentProfesional[4], depDocentProfesionalNum[4], depPercentDocentProf[4], capacitados[4], depPercentYesCoursed[4], noCapacitados[4], depPercentNoCoursed[4]],
+        ['TOTAL', depTeacherNum[5], depDocenteNum[5], depPercentDocent[5], depProfesionalNum[5], depPercentProfesional[5], depDocentProfesionalNum[5], depPercentDocentProf[5], capacitados[5], depPercentYesCoursed[5], noCapacitados[5], depPercentNoCoursed[5]]
+    ]
+    tableNumOfCoursesList = [
+        ["{} Cursos de Capacitación Docente".format(totalCourses[0])],
+        ["{} Cursos de Actualización Profesional".format(totalCourses[1])]
     ]
     tableTitle = Table(tableTitleList)
     tableContent = Table(tableContentList, style = [
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black)
-    ], rowHeights=(20, 15, 15, 15, 15, 15, 20))
+    ], rowHeights=(30, 20, 20, 20, 20, 20, 25), colWidths=(140, 60, 55, 50, 70, 50, 45, 50, 80, 50, 90, 50))
+    tableNumOfCourses = Table(tableNumOfCoursesList, style = [
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black)
+    ])
     story=[]
     story.append(tableTitle)
+    story.append(Spacer(1, inch/2))
     story.append(tableContent)
+    story.append(Spacer(1, inch/4))
+    story.append(tableNumOfCourses)
     doc.build(story)
     pdf_out=output.getvalue()
     output.close()

@@ -435,9 +435,22 @@ def data_con():
                     capacitados[4]+=1
                 capacitados[5]+=1
         # Porcentaje del departamento
+        depPercentYesCoursed = []
+        for val in range(0, len(depTeacherNum)):
+            depPercentYesCoursed.append("{0:.2f}%".format((capacitados[val]*100)/depTeacherNum[val]))
         # Docentes que no tomaron nada
+        noCapacitados = []
+        for val in range(0, len(depTeacherNum)):
+            noCapacitados.append(depTeacherNum[val]-capacitados[val])
         # Porcentaje del departamento
-        return(concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados), 200)
+        depPercentNoCoursed = []
+        for val in range(0, len(depTeacherNum)):
+            depPercentNoCoursed.append("{0:.2f}%".format((noCapacitados[val]*100)/depTeacherNum[val]))
+        # Cursos de Capacitación Docente y Actualización Profesional
+        numOfCD = Course.objects.filter(typeCourse='Docente')
+        numOfAP = Course.objects.filter(typeCourse='Profesional')
+        totalCourses = [len(numOfCD), len(numOfAP)]
+        return(concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados, depPercentYesCoursed, noCapacitados, depPercentNoCoursed, totalCourses), 200)
 
 #  ==> --> In Develop <-- <==
 
