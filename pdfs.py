@@ -456,7 +456,10 @@ def concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depPro
     output = BytesIO()
     doc = SimpleDocTemplate(output, pagesize=landscape(legal), topMargin=30, bottomMargin=50)
     tableTitleList = [
-        ['PROGRAMA INSTITUCIONAL DE FORMACIÓN Y ACTUALIZACIÓN DOCENTE Y PROFESIONAL']
+        [set_title('PROGRAMA INSTITUCIONAL DE FORMACIÓN Y ACTUALIZACIÓN DOCENTE Y PROFESIONAL')]
+    ]
+    tableSubtitleList = [
+        [set_subtitle('INDICADORES')]
     ]
     tableContentList = [
         [set_CNMS('DEPARTAMENTO', 'black'), set_CNMS('TOTAL DE DOCENTES', 'black'), set_CNMS('DOCENTE', 'black'), set_CNMS('%', 'black'), set_CNMS('PROFESIONAL', 'black'), set_CNMS('%', 'black'), set_CNMS('AMBAS', 'black'), set_CNMS('%', 'black'), set_CNMS('DOCENTES CAPACITADOS', 'black'), set_CNMS('%', 'black'), set_CNMS('DOCENTES NO CAPACITADOS', 'black'), set_CNMS('%', 'black')],
@@ -472,14 +475,23 @@ def concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depPro
         ["{} Cursos de Actualización Profesional".format(totalCourses[1])]
     ]
     tableTitle = Table(tableTitleList)
+    tableSubtitle = Table(tableSubtitleList)
     tableContent = Table(tableContentList, style = [
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black)
+        ('BACKGROUND', (0, 0), (1, -1), colors.steelblue),
+        ('BACKGROUND', (2, 0), (3, -1), colors.lightskyblue),
+        ('BACKGROUND', (4, 0), (5, -1), colors.lightcoral),
+        ('BACKGROUND', (6, 0), (7, -1), colors.mistyrose),
+        ('BACKGROUND', (8, 0), (9, -1), colors.fidblue),
+        ('BACKGROUND', (10, 0), (11, -1), colors.crimson)
     ], rowHeights=(30, 20, 20, 20, 20, 20, 25), colWidths=(140, 60, 55, 50, 70, 50, 45, 50, 80, 50, 90, 50))
     tableNumOfCourses = Table(tableNumOfCoursesList, style = [
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black)
+        ('BACKGROUND', (0, 0), (0, 0), colors.greenyellow),
+        ('BACKGROUND', (0, 1), (0, 1), colors.coral),        
     ])
     story=[]
     story.append(tableTitle)
+    story.append(Spacer(1, inch/6))
+    story.append(tableSubtitle)
     story.append(Spacer(1, inch/2))
     story.append(tableContent)
     story.append(Spacer(1, inch/4))

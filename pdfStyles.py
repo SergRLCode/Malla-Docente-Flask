@@ -40,6 +40,16 @@ styleNMS = stylesMoreSmall['Normal']
 styleNMS.fontSize = 6.5
 styleNMS.leading = 8
 
+titlexd = getSampleStyleSheet()
+title = titlexd['Heading1']
+title.fontSize = 18
+title.alignment = TA_CENTER
+
+_subtitle = getSampleStyleSheet()
+subtitle = _subtitle['Heading2']
+subtitle.fontSize = 15
+subtitle.alignment = TA_CENTER
+
 def set_H2(text):
     return Paragraph(text.upper(), styleH2)
 
@@ -51,6 +61,12 @@ def set_NU(text):
 
 def set_H1(text):
     return Paragraph(text, _styleH1)
+
+def set_title(text):
+    return Paragraph(text, title)
+
+def set_subtitle(text):
+    return Paragraph(text, subtitle)
 
 def set_RN(text):
     return Paragraph(text, _styleRN)
