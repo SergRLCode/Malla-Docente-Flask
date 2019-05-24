@@ -17,7 +17,7 @@ class Course(db.Document):
         ('Profesional', 'Profesional'),
     )
     # Inscription Data
-    courseName = db.StringField(required=True)
+    courseName = db.StringField(required=True, unique=True)
     teacherRFC = db.StringField(required=True)
     modality = db.StringField(choices=modality_choice)
     dateStart = db.DateTimeField()
@@ -31,7 +31,7 @@ class Course(db.Document):
     courseTo = db.StringField()
     typeCourse = db.StringField()
     # Assistant List Data
-    serial = db.IntField()
+    serial = db.StringField()
     # Status
     state = db.StringField(choices=state_choice, default='Por empezar')
 

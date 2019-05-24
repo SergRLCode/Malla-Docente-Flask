@@ -25,7 +25,7 @@ _styleRN.alignment = TA_RIGHT
 
 stylesSmall = getSampleStyleSheet()
 styleNS = stylesSmall['Normal']
-styleNS.fontSize = 6
+styleNS.fontSize = 7
 styleNS.leading = 7
 styleNS.alignment = TA_CENTER
 

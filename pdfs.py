@@ -124,7 +124,7 @@ def assistantList(teachers, courseTeacher, course):
         ['MODALIDAD: ', 'PRESENCIAL(' + presential + ')', 'VIRTUAL(' + virtual + ')']
     ]
     arrayDays = []
-    for x in range(0, (course['dateEnd'] - course['dateStart']+td(days=1)).days):
+    for x in range(0, 5):
         arrayDays.append((course['dateStart']+td(days=x)).day)
     tableDataTeacherList = [
         ['No.', 'NOMBRE DEL PARTICIPANTE', 'R.F.C.', 'DEPARTAMENTO ACADÉMICO', set_N('CUMPLIMIENTO DE ACTIVIDADES'), 'ASISTENCIA'],
@@ -369,7 +369,7 @@ def pollDocument(answers, courseData, teacher, departament):
         [set_SN("NOMBRE DEL EVENTO", 'white')],
         [set_SN(courseData[0][0].upper(), 'black')],
         [set_SN("DEPARTAMENTO ACADEMICO", 'white'), set_SN("INSTRUCTOR (S)", 'white')],
-        [set_SN(departament, 'black'), set_SN('{} {} {}'.format(teacher[0][0], teacher[0][1], teacher[0][2]).upper(), 'black')],
+        [set_SNU(departament, 'black'), set_SN('{} {} {}'.format(teacher[0][0], teacher[0][1], teacher[0][2]).upper(), 'black')],
         [set_SN('LUGAR O SEDE', 'white'), [set_SNU('fecha de realización', 'white')], [set_SNU('duración', 'white')], [set_SNU('horario', 'white')]],
         [set_SN(courseData[0][2].upper(), 'black'), set_SN(periodOfTime(courseData[0][3], courseData[0][4]), 'black'), set_SN('{} hrs.'.format(courseData[0][5]), 'black'), set_SN(courseData[0][6], 'black')]
     ]

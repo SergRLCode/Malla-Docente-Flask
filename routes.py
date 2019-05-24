@@ -85,7 +85,11 @@ def courses():                      # Ruta para agregar un curso o consultar tod
         all_rfc = Teacher.objects.all().values_list('rfc')
         if data['teacherRFC'] not in all_rfc:
             return(jsonify({"message": "Error, RFC no valido."}), 404)
-        else:
+        try:
+            Course.objects.get(courseName=data["courseName"])
+            return(jsonify({"message": "Curso ya esta registrado."}), 400)
+        # 481 110 26 80
+        except:
             Course(
                 courseName = data["courseName"],
                 teacherRFC = data["teacherRFC"],
@@ -97,9 +101,9 @@ def courses():                      # Ruta para agregar un curso o consultar tod
                 description = data["description"],
                 totalHours = data["totalHours"],
                 courseTo = data["courseTo"],
-                teachersInCourse = data['teachersInCourse'],
+                teachersInCourse = ['No hay docentes registrados'],
                 typeCourse = data["typeCourse"],
-                serial = data["serial"]
+                serial = ""
             ).save()
             return(jsonify({"message": "Curso guardado."}), 200)
 
@@ -310,7 +314,7 @@ def coursesList_view():             # Ruta que regresa el documento PDF con list
         return(jsonify({'message': 'Sin cursos'}), 404)
 
 @app.route('/course/<name>/assistantList', methods=['GET'])
-@jwt_required
+# @jwt_required
 def assistantList_view(name):       # Ruta que regresa el PDF con la lista de asistencia del curso seleccionado POR PARAMETRO EN RUTA
     if(request.method=='GET'):################################################################# NO MOVERLE
         try:
@@ -369,6 +373,7 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
             return(jsonify({'message': 'Curso inexistente.'}), 404)
             
 @app.route('/dataConcentrated', methods=['GET'])
+# @jwt_required
 def data_con():
     if(request.method=='GET'):
         # Nombres de los cursos
@@ -391,17 +396,20 @@ def data_con():
         for rfcs in rfcsCourse:
             for rfc in rfcs:
                 getDep = Teacher.objects.filter(rfc=rfc).values_list('departament')
-                if(getDep[0]=='Ciencias Básicas'):
-                    depDocenteNum[0]+=1
-                elif(getDep[0]=='Económico-Administrativo'):
-                    depDocenteNum[1]+=1
-                elif(getDep[0]=='Ingenierías'):
-                    depDocenteNum[2]+=1                    
-                elif(getDep[0]=='Ingeniería Industrial'):
-                    depDocenteNum[3]+=1
-                elif(getDep[0]=='Sistemas y Computación'):
-                    depDocenteNum[4]+=1
-                depDocenteNum[5]+=1
+                try:
+                    if(getDep[0]=='Ciencias Básicas'):
+                        depDocenteNum[0]+=1
+                    elif(getDep[0]=='Económico-Administrativo'):
+                        depDocenteNum[1]+=1
+                    elif(getDep[0]=='Ingenierías'):
+                        depDocenteNum[2]+=1                    
+                    elif(getDep[0]=='Ingeniería Industrial'):
+                        depDocenteNum[3]+=1
+                    elif(getDep[0]=='Sistemas y Computación'):
+                        depDocenteNum[4]+=1
+                    depDocenteNum[5]+=1
+                except:
+                    depDocenteNum = [0, 0, 0, 0, 0, 0]                    
         # Porcentaje del departamento
         depPercentDocent = [0, 0, 0, 0, 0, 0]
         for val in range(0, len(depTeacherNum)):
@@ -412,17 +420,20 @@ def data_con():
         for rfcs in rfcsCourse:
             for rfc in rfcs:
                 getDep = Teacher.objects.filter(rfc=rfc).values_list('departament')
-                if(getDep[0]=='Ciencias Básicas'):
-                    depProfesionalNum[0]+=1
-                elif(getDep[0]=='Económico-Administrativo'):
-                    depProfesionalNum[1]+=1
-                elif(getDep[0]=='Ingenierías'):
-                    depProfesionalNum[2]+=1                    
-                elif(getDep[0]=='Ingeniería Industrial'):
-                    depProfesionalNum[3]+=1
-                elif(getDep[0]=='Sistemas y Computación'):
-                    depProfesionalNum[4]+=1
-                depProfesionalNum[5]+=1
+                try:
+                    if(getDep[0]=='Ciencias Básicas'):
+                        depProfesionalNum[0]+=1
+                    elif(getDep[0]=='Económico-Administrativo'):
+                        depProfesionalNum[1]+=1
+                    elif(getDep[0]=='Ingenierías'):
+                        depProfesionalNum[2]+=1                    
+                    elif(getDep[0]=='Ingeniería Industrial'):
+                        depProfesionalNum[3]+=1
+                    elif(getDep[0]=='Sistemas y Computación'):
+                        depProfesionalNum[4]+=1
+                    depProfesionalNum[5]+=1
+                except:
+                    depProfesionalNum = [0, 0, 0, 0, 0, 0]                                   
         # Porcentaje del departamento
         depPercentProfesional = [0, 0, 0, 0, 0, 0]
         for val in range(0, len(depTeacherNum)):
@@ -535,7 +546,10 @@ def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente a
                 #             finalizacion del curso, no este entre las horas de otro de inicio y finalizacion del curso"""
                 #             if (hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1]) or (hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]): 
                 #                 return jsonify({'message': 'Se empalma con otro curso a tomar'})
-                courseRequest = RequestCourse.objects.get(course=course['courseName'])
+                try:
+                    courseRequest = RequestCourse.objects.get(course=course['courseName'])
+                except:
+                    return jsonify({'message': 'Peticion invalida'}), 404
                 if data['rfc'] in courseRequest['requests']:
                     courseRequest['requests'].remove(data['rfc'])
                     courseRequest.save()
@@ -553,7 +567,10 @@ def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente a
 def rejectTeacherOfCourse_view(name):       # Ruta que elimina el RFC del docente rechazado del curso
     if(request.method == 'POST'):
         data = request.get_json()
-        courseRequest = RequestCourse.objects.get(course=name)
+        try:
+            courseRequest = RequestCourse.objects.get(course=name)
+        except:
+            return jsonify({'message': 'Peticion invalida'}), 404
         if(data['rfc'] in courseRequest['requests']):
             courseRequest['requests'].remove(data['rfc'])
             courseRequest.save()
