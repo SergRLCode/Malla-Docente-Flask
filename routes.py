@@ -1,6 +1,6 @@
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
-from pdfs import assistantList, coursesList, inscription, pollDocument, concentrated
 from models import Course, Teacher, LetterheadMetaData, Departament, BlacklistJWT, RequestCourse, BlacklistRequest
+from pdfs import assistantList, coursesList, inscription, pollDocument, concentrated
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
 from passlib.hash import pbkdf2_sha256 as sha256
@@ -13,10 +13,20 @@ def check_if_token_in_blacklist(decrypted_token):           # Verifica que el to
     jti = decrypted_token['jti']
     identity = decrypted_token['identity']
     _jwt = BlacklistJWT.objects.all()
+    courses = Course.objects.all()
+    for course in courses:
+        hours = course['timetable'].split('-')
+        if course['dateStart'].date() == dt.now().date():
+            if str(dt.now().hour) >= hours[0].replace(':00', ""):
+                course['state'] = 'Cursando'
+                course.save()
+        if course['dateEnd'].date() == dt.now().date():   
+            if str(dt.now().hour) >= hours[1].replace(':00', ""):
+                course['state'] = 'Terminado'
+                course.save()
     for value in _jwt:
         if (jti==value['jwt']):
-            return True
-    # Si regresa un booleano False, permite el accesso, si regresa True, marca que se revoco el JWT
+            return True             # Si regresa un booleano False, permite el accesso, si regresa True, marca que se revoco el JWT
 
 @app.route('/login', methods=['POST'])
 def login_user():                   # El tipico login de cada sistema
@@ -43,7 +53,7 @@ def login_user():                   # El tipico login de cada sistema
             return(jsonify({"data": {"message": "NIP incorrecto"}}), 401)
     except Teacher.DoesNotExist:
         return(jsonify({"data": {"message": "Docente no registrado"}}), 404)
-        
+
 @app.route('/refresh', methods=['GET'])
 @jwt_refresh_token_required
 def refresh_jwt():                  # Ruta que regresa otro JWT para el acceso 
@@ -74,11 +84,18 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
     return(jsonify({'message': 'Bye bye!'}), 200)
 
 @app.route('/courses', methods=['GET', 'POST'])
-# @jwt_required
+@jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
         all_courses = Course.objects.filter()
         data = courseSchemas.dump(all_courses)
+        for course in data[0]:
+            if course['teachersInCourse'] != ['No hay docentes registrados']:
+                newDict = []
+                for val in course['teachersInCourse']:
+                    teacherName = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
+                    newDict.append("{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]))
+                course['teachersInCourse'] = newDict
         return(jsonify(data), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
@@ -88,7 +105,6 @@ def courses():                      # Ruta para agregar un curso o consultar tod
         try:
             Course.objects.get(courseName=data["courseName"])
             return(jsonify({"message": "Curso ya esta registrado."}), 400)
-        # 481 110 26 80
         except:
             Course(
                 courseName = data["courseName"],
@@ -120,7 +136,7 @@ def available_courses():            # Ruta que retorna una lista con los cursos 
         return(jsonify({'message': arrayToSend}), 200)
 
 @app.route('/course/<name>', methods=['GET', 'PUT', 'DELETE'])
-# @jwt_required
+@jwt_required
 def course(name):                   # Ruta para consultar uno en especifico, editar info de un curso en especifico o borrar ese curso en especifico
     try:
         course = Course.objects.get(courseName=name)
@@ -129,7 +145,6 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
     if (request.method == 'GET'):################################################### Ya no moverle
         datos = courseSchema.dump(course)
         newDictToSend = datos[0]
-        print(newDictToSend)
         for key in ('teachersInCourse', 'id', 'serial'):
             del newDictToSend[key]
         teacherWillteach = Teacher.objects.filter(rfc=course['teacherRFC']).values_list("name", "fstSurname", "sndSurname")
@@ -207,7 +222,7 @@ def edit_serial(course):            # Ruta para cambio de FOLIO
         return(jsonify({'message': 'Cambios guardados!'}), 200)
 
 @app.route('/teachers', methods=['GET', 'POST'])
-# @jwt_required
+@jwt_required
 def teachers():                     # Ruta para agregar un docente o consultar todos
     if (request.method == 'GET'):
         all_teachers = Teacher.objects.all()
@@ -240,7 +255,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
             return(jsonify({'message': 'Departamento invalido'}), 404)
 
 @app.route('/teacher/<rfc>', methods=['GET', 'PUT', 'DELETE'])
-# @jwt_required
+@jwt_required
 def teacher(rfc):                # Ruta para consultar uno en especifico, editar info de un docente en especifico o borrar ese docente en especifico
     try:
         teacher = Teacher.objects.get(rfc=rfc)
@@ -291,7 +306,7 @@ def my_courses():                    # Regresa todos los cursos en los que se ha
             return(jsonify({'message': 'No esta registrado en ningun curso'}), 404)
 
 @app.route('/courses/coursesList', methods=['GET'])
-# @jwt_required
+@jwt_required
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 
     all_courses = Course.objects.all()
     if len(all_courses)!=0:
@@ -314,7 +329,7 @@ def coursesList_view():             # Ruta que regresa el documento PDF con list
         return(jsonify({'message': 'Sin cursos'}), 404)
 
 @app.route('/course/<name>/assistantList', methods=['GET'])
-# @jwt_required
+@jwt_required
 def assistantList_view(name):       # Ruta que regresa el PDF con la lista de asistencia del curso seleccionado POR PARAMETRO EN RUTA
     if(request.method=='GET'):################################################################# NO MOVERLE
         try:
@@ -373,8 +388,8 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
             return(jsonify({'message': 'Curso inexistente.'}), 404)
             
 @app.route('/dataConcentrated', methods=['GET'])
-# @jwt_required
-def data_con():
+@jwt_required
+def data_con():                         # Ruta que regresa un PDF con los datos de los cursos concentrados
     if(request.method=='GET'):
         # Nombres de los cursos
         depName = []
@@ -516,6 +531,7 @@ def pull():
     return jsonify({"message": "Hello {}".format(get_jwt_identity())})
 
 @app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
+@jwt_required
 def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente aceptado al curso seleccionado
     if(request.method == 'POST'):
         data = request.get_json()
@@ -564,6 +580,7 @@ def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente a
                 return(jsonify({'message': 'Docente agregado con exito.'}), 200)
 
 @app.route('/rejectTeacherOfCourse/<name>', methods=['POST'])
+@jwt_required
 def rejectTeacherOfCourse_view(name):       # Ruta que elimina el RFC del docente rechazado del curso
     if(request.method == 'POST'):
         data = request.get_json()
@@ -590,6 +607,7 @@ def rejectTeacherOfCourse_view(name):       # Ruta que elimina el RFC del docent
             return(jsonify({'message': 'RFC inexistente'}), 500)
 
 @app.route('/removeTeacherinCourse/<name>', methods=['POST'])
+@jwt_required
 def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso 
     if(request.method == 'POST'):
         data = request.get_json()
@@ -607,6 +625,7 @@ def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso
             return(jsonify({"message": "No existe en la lista"}), 401)
 
 @app.route('/addInfo', methods=['GET', 'POST'])
+@jwt_required
 def addinfoView():                      # Only works to add meta data for each letterhead, next change will update meta data
     if(request.method == 'GET'):
         info = LetterheadMetaData.objects.all()
@@ -622,6 +641,7 @@ def addinfoView():                      # Only works to add meta data for each l
         return(jsonify({"message": "Added"}), 200)
 
 @app.route('/departament', methods=['GET', 'POST'])
+@jwt_required
 def adddepaView():                      # Only works to add departament info for each letterhead, next change will update departament info
     if(request.method == 'GET'):
         info = Departament.objects.all()
@@ -635,6 +655,7 @@ def adddepaView():                      # Only works to add departament info for
         return(jsonify({"message": "Added"}), 200)
 
 @app.route('/departament/<name>', methods=['PUT'])
+# @jwt_required
 def departament_view(name):
     try:
         dep = Departament.objects.get(name=name)
@@ -642,12 +663,25 @@ def departament_view(name):
     except:
         return(jsonify({'message': "Don't exists"}), 404)
     if(request.method=='PUT'):
+        try:
+            teacher = Teacher.objects.get(rfc=data['boss'])
+        except:
+            return jsonify({'message': 'RFC invalido'}), 401
+        try:
+            prevTeacher = Teacher.objects.get(rfc=dep['boss'])
+        except:
+            pass
+        prevTeacher['userType'] = 'Docente'
+        teacher['userType'] = 'Jefe de departamento'
         dep['name'] = data['name']
         dep['boss'] = data['boss']
+        prevTeacher.save()
+        teacher.save()
         dep.save()
         return(jsonify({'message': 'Success!'}), 200)
 
 @app.errorhandler(404)
+@jwt_required
 def page_not_found(error):
     error = {
         "errorType": "404",
