@@ -57,6 +57,7 @@ class Teacher(db.Document):
     sndSurname = db.StringField()
     numberPhone = db.StringField()
     email = db.StringField()
+    internal = db.BooleanField()
     # Academic Studies
     studyLevel = db.StringField()
     degree = db.StringField()
@@ -68,7 +69,7 @@ class Teacher(db.Document):
     # Sesion Data
     userType = db.StringField(choices=userType_choice)
     pin = db.StringField()
-    
+
 class RequestCourse(db.Document):
     course = db.StringField()
     requests = db.ListField(db.StringField())

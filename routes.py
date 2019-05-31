@@ -239,6 +239,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                     sndSurname = data["sndSurname"],
                     numberPhone = data["numberPhone"],
                     email = data["email"],
+                    internal = data["internal"],
                     studyLevel = data["studyLevel"],
                     degree = data["degree"],
                     speciality = data["speciality"],
@@ -268,7 +269,7 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
             del dictReturn[value]
         return(jsonify(dictReturn), 200)
     elif request.method == 'PUT':
-        attributes = ('rfc', 'name', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
+        attributes = ('rfc', 'name', 'internal', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
         data = request.get_json()
         for value in attributes:
             teacher[value] = data[value]    
@@ -548,11 +549,6 @@ def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente a
                 return(jsonify({"message": "Docente agregado previamente."}), 200)
             else:   # Si no...
                 # hoursCourseOne = course['timetable'].split('-')  # Una marihuanada
-                # if len(courseWillTeach)>0:
-                #     if(courseWillTeach[0][1] <= course['dateStart'] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course['dateEnd'] <= courseWillTeach[0][2]):
-                #         hoursCourseTwo = courseWillTeach[0][0].split('-')
-                #         if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
-                #             return(jsonify({'message': 'Se empalma con la materia que imparte'}), 201)  
                 # for rfcsCourse in restOfcourses: # Itera sobre el array que contiene los array de docentes de cada curso
                 #     if data['rfc'] in rfcsCourse[0]:   # Si el docente ya esta en un curso...
                 #         coursesData = Course.objects.filter(teachersInCourse=rfcsCourse[0], courseName=rfcsCourse[1]).values_list('timetable', 'dateStart', 'dateEnd', 'courseName') # Obtiene los datos del curso
