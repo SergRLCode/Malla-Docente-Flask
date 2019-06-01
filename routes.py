@@ -44,7 +44,7 @@ def login_user():                   # El tipico login de cada sistema
             refresh_token = create_refresh_token(identity = jwtIdentity)
             numUser = 0 if teacher['userType']=='Administrador' else 1 if teacher['userType']=='Jefe de departamento' else 2 if teacher['userType']=='Comunicación' else 3
             return (jsonify({"data": {
-                'message': 'Logged in as {} {} {}'.format(teacher["name"], teacher["fstSurname"], teacher["sndSurname"]),
+                'message': '{} {} {}'.format(teacher["name"], teacher["fstSurname"], teacher["sndSurname"]),
                 'type': numUser,
                 'access_token': access_token,
                 'refresh_token': refresh_token
@@ -89,17 +89,21 @@ def courses():                      # Ruta para agregar un curso o consultar tod
     if (request.method == 'GET'):
         all_courses = Course.objects.filter()
         data = courseSchemas.dump(all_courses)
-        for course in data[0]:
-            if course['teachersInCourse'] != ['No hay docentes registrados']:
-                newDict = []
-                for val in course['teachersInCourse']:
-                    teacherName = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
-                    newDict.append("{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]))
-                course['teachersInCourse'] = newDict
+        if len(data[0]) > 1:
+            for course in data[0]:
+                if course['teachersInCourse'] != ['No hay docentes registrados']:
+                    newDict = []
+                    for val in course['teachersInCourse']:
+                        teacherName = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
+                        newDict.append("{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]))
+                    course['teachersInCourse'] = newDict
         return(jsonify(data), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
         all_rfc = Teacher.objects.all().values_list('rfc')
+        totalDays = (dt.strptime(data['dateEnd'], "%Y-%m-%d")-dt.strptime(data['dateStart'], "%Y-%m-%d")).days+1
+        hours = data['timetable'].replace(":00", "").split('-')
+        totalHrs = totalDays*(int(hours[1])-int(hours[0]))
         if data['teacherRFC'] not in all_rfc:
             return(jsonify({"message": "Error, RFC no valido."}), 404)
         try:
@@ -115,10 +119,10 @@ def courses():                      # Ruta para agregar un curso o consultar tod
                 timetable = data["timetable"],
                 place = data["place"],
                 description = data["description"],
-                totalHours = data["totalHours"],
                 courseTo = data["courseTo"],
-                teachersInCourse = ['No hay docentes registrados'],
                 typeCourse = data["typeCourse"],
+                teachersInCourse = ['No hay docentes registrados'],
+                totalHours = totalHrs,
                 serial = ""
             ).save()
             return(jsonify({"message": "Curso guardado."}), 200)
