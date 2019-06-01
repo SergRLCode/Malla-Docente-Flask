@@ -42,14 +42,6 @@ class Teacher(db.Document):
         ('Comunicación', 'Comunicación'),
         ('Jefe de departamento', 'Jefe de departamento'),
     )
-    departament_choice = (
-        ("Ciencias Básicas", "Ciencias Básicas"),
-        ("Desarrollo Académico", "Desarrollo Académico"),
-        ("Económico-Administrativo", "Económico-Administrativo"),
-        ("Ingenierías", "Ingenierías"),
-        ("Ingeniería Industrial", "Ingeniería Industrial"),
-        ("Sistemas y Computación", "Sistemas y Computación")
-    )
     # Personal Data
     rfc = db.StringField(max_length=13, required=True, unique=True)
     name = db.StringField()
@@ -63,7 +55,7 @@ class Teacher(db.Document):
     degree = db.StringField()
     speciality = db.StringField()
     # Laboral Data
-    departament = db.StringField(choices=departament_choice)
+    departament = db.StringField()
     schedule = db.StringField()
     position = db.StringField()
     # Sesion Data
