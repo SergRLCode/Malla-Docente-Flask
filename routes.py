@@ -152,7 +152,7 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         for key in ('teachersInCourse', 'id', 'serial'):
             del newDictToSend[key]
         teacherWillteach = Teacher.objects.filter(rfc=course['teacherRFC']).values_list("name", "fstSurname", "sndSurname")
-        newDictToSend['teacherRFC'] = "{} {} {}".format(teacherWillteach[0][0], teacherWillteach[0][1], teacherWillteach[0][2])
+        newDictToSend['teacherName'] = "{} {} {}".format(teacherWillteach[0][0], teacherWillteach[0][1], teacherWillteach[0][2])
         return(jsonify(newDictToSend), 200)
     elif (request.method == 'PUT'):################################################# Ya no moverle
         data = request.get_json()
