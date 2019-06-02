@@ -156,12 +156,16 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         return(jsonify(newDictToSend), 200)
     elif (request.method == 'PUT'):################################################# Ya no moverle
         data = request.get_json()
-        attributes = ("courseName", "courseTo", "place", "description", "dateStart", "dateEnd", "modality", "state", "timetable", "totalHours", "typeCourse")
+        totalDays = (dt.strptime(data['dateEnd'], "%Y-%m-%d")-dt.strptime(data['dateStart'], "%Y-%m-%d")).days+1
+        hours = data['timetable'].replace(":00", "").split('-')
+        totalHrs = totalDays*(int(hours[1])-int(hours[0]))
+        attributes = ("courseName", "courseTo", "place", "description", "dateStart", "dateEnd", "modality", "state", "timetable", "typeCourse")
         all_rfc = Teacher.objects.all().values_list('rfc')        
         for attribute in attributes:
             course[attribute] = data[attribute]
         if data['teacherRFC'] in all_rfc:
             course['teacherRFC'] = data['teacherRFC']
+            course['totalHours'] = totalHrs
         else:
             return(jsonify({'message': 'RFC invalido'}), 404)
         course.save()

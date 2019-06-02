@@ -29,7 +29,7 @@ class Course(db.Document):
     description = db.StringField()
     totalHours = db.IntField()
     courseTo = db.StringField()
-    typeCourse = db.StringField()
+    typeCourse = db.StringField(choices=type_choice)
     # Assistant List Data
     serial = db.StringField()
     # Status
@@ -41,14 +41,6 @@ class Teacher(db.Document):
         ('Administrador', 'Administrador'),
         ('Comunicación', 'Comunicación'),
         ('Jefe de departamento', 'Jefe de departamento'),
-    )
-    departament_choice = (
-        ("Ciencias Básicas", "Ciencias Básicas"),
-        ("Desarrollo Académico", "Desarrollo Académico"),
-        ("Económico-Administrativo", "Económico-Administrativo"),
-        ("Ingenierías", "Ingenierías"),
-        ("Ingeniería Industrial", "Ingeniería Industrial"),
-        ("Sistemas y Computación", "Sistemas y Computación")
     )
     # Personal Data
     rfc = db.StringField(max_length=13, required=True, unique=True)
@@ -63,7 +55,7 @@ class Teacher(db.Document):
     degree = db.StringField()
     speciality = db.StringField()
     # Laboral Data
-    departament = db.StringField(choices=departament_choice)
+    departament = db.StringField()
     schedule = db.StringField()
     position = db.StringField()
     # Sesion Data
