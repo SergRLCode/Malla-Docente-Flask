@@ -87,10 +87,11 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
 @jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
-        all_courses = Course.objects.filter().values_list('courseName', 'teacherRFC', 'timetable')
+        all_courses = Course.objects.filter().values_list('courseName', 'teacherRFC', 'timetable', 'dateStart')
         listOfObjects = []
         objectData = {}
         for course in all_courses:
+            print(course[3])
             teacherName = Teacher.objects.filter(rfc=course[1]).values_list('name', 'fstSurname', 'sndSurname')
             objectData['courseName'] = course[0]
             objectData['teacherRFC'] = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
@@ -126,6 +127,13 @@ def courses():                      # Ruta para agregar un curso o consultar tod
                 serial = ""
             ).save()
             return(jsonify({"message": "Curso guardado."}), 200)
+
+@app.route('/coursesByPeriod', methods=['POST'])
+@jwt_required
+def courses_by_period():
+    if(request.method=='POST'):
+        data = request.get_json()
+        return jsonify(data)
 
 @app.route('/availableCourses', methods=['GET'])
 @jwt_required
