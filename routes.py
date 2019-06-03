@@ -87,17 +87,17 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
 @jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
-        all_courses = Course.objects.filter()
-        data = courseSchemas.dump(all_courses)
-        if len(data[0]) > 1:
-            for course in data[0]:
-                if course['teachersInCourse'] != ['No hay docentes registrados']:
-                    newDict = []
-                    for val in course['teachersInCourse']:
-                        teacherName = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
-                        newDict.append("{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]))
-                    course['teachersInCourse'] = newDict
-        return(jsonify(data), 200)
+        all_courses = Course.objects.filter().values_list('courseName', 'teacherRFC', 'timetable')
+        listOfObjects = []
+        objectData = {}
+        for course in all_courses:
+            teacherName = Teacher.objects.filter(rfc=course[1]).values_list('name', 'fstSurname', 'sndSurname')
+            objectData['courseName'] = course[0]
+            objectData['teacherRFC'] = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
+            objectData['timetable'] = course[2]
+            listOfObjects.append(objectData)
+            objectData = {}
+        return(jsonify({'message': listOfObjects}), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
         all_rfc = Teacher.objects.all().values_list('rfc')
@@ -131,12 +131,12 @@ def courses():                      # Ruta para agregar un curso o consultar tod
 @jwt_required
 def available_courses():            # Ruta que retorna una lista con los cursos disponibles, siendo el dia de inicio mayor a la fecha del servidor
     if(request.method=='GET'):
-        availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC')
+        availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC', 'timetable')
         arrayToSend = []
         for vals in availableCourses:
             teacherName = Teacher.objects.filter(rfc=vals[1]).values_list('name', 'fstSurname', 'sndSurname')
             completeName = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
-            arrayToSend.append({'courseName': vals[0], 'teacherName': completeName})
+            arrayToSend.append({'courseName': vals[0], 'teacherName': completeName, 'timetable': vals[2]})
         return(jsonify({'message': arrayToSend}), 200)
 
 @app.route('/course/<name>', methods=['GET', 'PUT', 'DELETE'])
