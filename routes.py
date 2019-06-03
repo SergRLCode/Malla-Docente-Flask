@@ -89,18 +89,18 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
 @jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
-        all_courses = Course.objects.filter().values_list('courseName', 'teacherRFC', 'timetable', 'dateStart')
-        listOfObjects = []
-        objectData = {}
+        all_courses = Course.objects.filter().values_list('dateStart')
+        periods = []
         for course in all_courses:
-            print(months[course[3].month-1], course[3].year)
-            teacherName = Teacher.objects.filter(rfc=course[1]).values_list('name', 'fstSurname', 'sndSurname')
-            objectData['courseName'] = course[0]
-            objectData['teacherRFC'] = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
-            objectData['timetable'] = course[2]
-            listOfObjects.append(objectData)
-            objectData = {}
-        return(jsonify({'message': listOfObjects}), 200)
+            if months[course.month-1]=="Julio":
+                period = "{} {}".format("{}-{}".format(months[course.month-1], months[course.month]), course.year)
+            elif months[course.month-1]=="Agosto":
+                period = "{} {}".format("{}-{}".format(months[course.month-2], months[course.month-1]), course.year)
+            else:
+                period = "{} {}".format(months[course.month-1], course.year)
+            if period not in periods:
+                periods.append(period)
+        return(jsonify({'message': periods}), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
         all_rfc = Teacher.objects.all().values_list('rfc')
