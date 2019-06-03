@@ -91,7 +91,6 @@ def courses():                      # Ruta para agregar un curso o consultar tod
         listOfObjects = []
         objectData = {}
         for course in all_courses:
-            print(course[3])
             teacherName = Teacher.objects.filter(rfc=course[1]).values_list('name', 'fstSurname', 'sndSurname')
             objectData['courseName'] = course[0]
             objectData['teacherRFC'] = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
@@ -127,13 +126,6 @@ def courses():                      # Ruta para agregar un curso o consultar tod
                 serial = ""
             ).save()
             return(jsonify({"message": "Curso guardado."}), 200)
-
-@app.route('/coursesByPeriod', methods=['POST'])
-@jwt_required
-def courses_by_period():
-    if(request.method=='POST'):
-        data = request.get_json()
-        return jsonify(data)
 
 @app.route('/availableCourses', methods=['GET'])
 @jwt_required
