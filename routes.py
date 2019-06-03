@@ -8,6 +8,8 @@ from reportlab.pdfgen import canvas
 from app import app, jwt
 from marsh import *
 
+months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
 @jwt.token_in_blacklist_loader
 def check_if_token_in_blacklist(decrypted_token):           # Verifica que el token no este en la blacklist
     jti = decrypted_token['jti']
@@ -91,7 +93,7 @@ def courses():                      # Ruta para agregar un curso o consultar tod
         listOfObjects = []
         objectData = {}
         for course in all_courses:
-            print(course[3])
+            print(months[course[3].month-1], course[3].year)
             teacherName = Teacher.objects.filter(rfc=course[1]).values_list('name', 'fstSurname', 'sndSurname')
             objectData['courseName'] = course[0]
             objectData['teacherRFC'] = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
