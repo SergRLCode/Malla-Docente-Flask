@@ -91,6 +91,15 @@ def courses():                      # Ruta para agregar un curso o consultar tod
     if (request.method == 'GET'):
         all_courses = Course.objects.all()
         data = courseSchemas.dump(all_courses)
+        for course in data[0]:
+            period = dt.strptime(course['dateStart'].replace("T00:00:00+00:00", ""), "%Y-%m-%d")
+            if months[period.month-1]=="Julio":
+                period = "{} {}".format("{}-{}".format(months[period.month-1], months[period.month]), period.year)
+            elif months[period.month-1]=="Agosto":
+                period = "{} {}".format("{}-{}".format(months[period.month-2], months[period.month-1]), period.year)
+            else:
+                period = "{} {}".format(months[period.month-1], period.year)
+            course['period'] = period
         return(jsonify(data), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
