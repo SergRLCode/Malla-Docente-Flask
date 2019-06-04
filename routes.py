@@ -89,18 +89,9 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
 @jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
-        all_courses = Course.objects.filter().values_list('dateStart')
-        periods = []
-        for course in all_courses:
-            if months[course.month-1]=="Julio":
-                period = "{} {}".format("{}-{}".format(months[course.month-1], months[course.month]), course.year)
-            elif months[course.month-1]=="Agosto":
-                period = "{} {}".format("{}-{}".format(months[course.month-2], months[course.month-1]), course.year)
-            else:
-                period = "{} {}".format(months[course.month-1], course.year)
-            if period not in periods:
-                periods.append(period)
-        return(jsonify({'message': periods}), 200)
+        all_courses = Course.objects.all()
+        data = courseSchemas.dump(all_courses)
+        return(jsonify(data), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
         all_rfc = Teacher.objects.all().values_list('rfc')
@@ -130,11 +121,35 @@ def courses():                      # Ruta para agregar un curso o consultar tod
             ).save()
             return(jsonify({"message": "Curso guardado."}), 200)
 
+@app.route('/periods')
+@jwt_required
+def periodsOfSystem():
+    all_courses = Course.objects.filter().values_list('dateStart')
+    periods = []
+    for course in all_courses:
+        if months[course.month-1]=="Julio":
+            period = "{} {}".format("{}-{}".format(months[course.month-1], months[course.month]), course.year)
+        elif months[course.month-1]=="Agosto":
+            period = "{} {}".format("{}-{}".format(months[course.month-2], months[course.month-1]), course.year)
+        else:
+            period = "{} {}".format(months[course.month-1], course.year)
+        if period not in periods:
+            periods.append(period)
+    return(jsonify({'message': periods}), 200)
+
 @app.route('/coursesByPeriod', methods=['POST'])
 @jwt_required
 def courses_by_period():
     if(request.method=='POST'):
+        all_courses = Course.objects.all()
         data = request.get_json()
+        periodDesglosado = data['period'].split(' ')
+        if periodDesglosado[0] == 'Julio-Agosto':
+            mesesDesglosados = periodDesglosado[0].split('-')
+            listaQueContieneMesesAndYear = [months.index(mesesDesglosados[0])+1, months.index(mesesDesglosados[1])+1, int(periodDesglosado[1])]
+            print(listaQueContieneMesesAndYear)
+        else:
+            print(months.index(periodDesglosado[0])+1)
         return jsonify(data)
 
 @app.route('/availableCourses', methods=['GET'])
