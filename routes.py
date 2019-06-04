@@ -150,16 +150,27 @@ def periodsOfSystem():
 @jwt_required
 def courses_by_period():
     if(request.method=='POST'):
-        all_courses = Course.objects.all()
+        all_courses = Course.objects.filter().values_list('dateStart', 'courseName', 'teacherRFC', 'timetable')
         data = request.get_json()
+        coursesToSend = []
         periodDesglosado = data['period'].split(' ')
         if periodDesglosado[0] == 'Julio-Agosto':
             mesesDesglosados = periodDesglosado[0].split('-')
             listaQueContieneMesesAndYear = [months.index(mesesDesglosados[0])+1, months.index(mesesDesglosados[1])+1, int(periodDesglosado[1])]
-            print(listaQueContieneMesesAndYear)
+            for course in all_courses:
+                if course[0].year == listaQueContieneMesesAndYear[2]:
+                    if course[0].month == listaQueContieneMesesAndYear[0] or course[0].month == listaQueContieneMesesAndYear[1]:
+                        teacher = Teacher.objects.filter(rfc=course[2]).values_list('name', 'fstSurname', 'sndSurname')
+                        coursesToSend.append([course[1], "{} {} {}".format(teacher[0][0], teacher[0][1], teacher[0][2]), course[3]])
         else:
-            print(months.index(periodDesglosado[0])+1)
-        return jsonify(data)
+            listaQueContieneMesesAndYear = [months.index(periodDesglosado[0])+1, int(periodDesglosado[1])]
+            for course in all_courses:
+                if course[0].year == listaQueContieneMesesAndYear[1]:
+                    if course[0].month == listaQueContieneMesesAndYear[0] or course[0].month == listaQueContieneMesesAndYear[1]:
+                        teacher = Teacher.objects.filter(rfc=course[2]).values_list('name', 'fstSurname', 'sndSurname')
+                        coursesToSend.append([course[1], "{} {} {}".format(teacher[0][0], teacher[0][1], teacher[0][2]), course[3]])
+            print(months.index(periodDesglosado[0])+1, int(periodDesglosado[1]))
+        return jsonify({'courses': coursesToSend})
 
 @app.route('/availableCourses', methods=['GET'])
 @jwt_required
