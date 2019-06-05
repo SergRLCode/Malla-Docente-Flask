@@ -86,7 +86,7 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
     return(jsonify({'message': 'Bye bye!'}), 200)
 
 @app.route('/courses', methods=['GET', 'POST'])
-@jwt_required
+# @jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
         all_courses = Course.objects.all()
@@ -100,6 +100,9 @@ def courses():                      # Ruta para agregar un curso o consultar tod
             else:
                 period = "{} {}".format(months[period.month-1], period.year)
             course['period'] = period
+            teacherName = Teacher.objects.filter(rfc=course['teacherRFC']).values_list('name', 'fstSurname', 'sndSurname')
+            course['teacher'] = "{}_.|._{}_julianEsGay_{}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
+            print(course['teacher'])
         return(jsonify(data), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
