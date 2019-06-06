@@ -34,6 +34,7 @@ def check_if_token_in_blacklist(decrypted_token):           # Verifica que el to
 def login_user():                   # El tipico login de cada sistema
     data = request.get_json()
     try:
+        print(data)
         teacher = Teacher.objects.get(rfc=data["rfc"])
         if sha256.verify(data["pin"], teacher["pin"]):
             jwtIdentity = teacher["rfc"]
@@ -86,7 +87,7 @@ def logout_user2():                  # Un logout que agrega el ID del JWT de act
     return(jsonify({'message': 'Bye bye!'}), 200)
 
 @app.route('/courses', methods=['GET', 'POST'])
-# @jwt_required
+@jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
         all_courses = Course.objects.all()
@@ -102,7 +103,6 @@ def courses():                      # Ruta para agregar un curso o consultar tod
             course['period'] = period
             teacherName = Teacher.objects.filter(rfc=course['teacherRFC']).values_list('name', 'fstSurname', 'sndSurname')
             course['teacher'] = "{}_.|._{}_julianEsGay_{}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
-            print(course['teacher'])
         return(jsonify(data), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
@@ -278,11 +278,16 @@ def edit_serial(course):            # Ruta para cambio de FOLIO
         return(jsonify({'message': 'Cambios guardados!'}), 200)
 
 @app.route('/teachers', methods=['GET', 'POST'])
-@jwt_required
+# @jwt_required
 def teachers():                     # Ruta para agregar un docente o consultar todos
     if (request.method == 'GET'):
-        all_teachers = Teacher.objects.all()
-        return(jsonify(all_teachers), 200)
+        teachers = Teacher.objects.all()
+        all_teachers = teacherSchemas.dump(teachers)
+        for teacher in all_teachers[0]:
+            teacher['name'] = "{} {} {}".format(teacher['name'], teacher['fstSurname'], teacher['sndSurname'])
+            del teacher['fstSurname']
+            del teacher['sndSurname']
+        return(jsonify(all_teachers[0]), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
         try:
@@ -692,8 +697,8 @@ def addinfoView():                      # Only works to add meta data for each l
         ).save()
         return(jsonify({"message": "Added"}), 200)
 
-@app.route('/departament', methods=['GET', 'POST'])
-@jwt_required
+@app.route('/departaments', methods=['GET', 'POST'])
+# @jwt_required
 def adddepaView():                      # Only works to add departament info for each letterhead, next change will update departament info
     if(request.method == 'GET'):
         info = Departament.objects.all()
@@ -707,7 +712,7 @@ def adddepaView():                      # Only works to add departament info for
         return(jsonify({"message": "Added"}), 200)
 
 @app.route('/departament/<name>', methods=['PUT'])
-# @jwt_required
+@jwt_required
 def departament_view(name):
     try:
         dep = Departament.objects.get(name=name)
