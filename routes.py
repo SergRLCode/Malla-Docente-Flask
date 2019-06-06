@@ -60,7 +60,6 @@ def login_user():                   # El tipico login de cada sistema
 @app.route('/refresh', methods=['GET'])
 @jwt_refresh_token_required
 def refresh_jwt():                  # Ruta que regresa otro JWT para el acceso 
-    print(get_raw_jwt()['identity'])
     access_token = create_access_token(identity = get_jwt_identity(), expires_delta=td(hours=1))
     return(jsonify({'access_token': access_token}), 200)
 
@@ -133,30 +132,30 @@ def courses():                      # Ruta para agregar un curso o consultar tod
             ).save()
             return(jsonify({"message": "Curso guardado."}), 200)
 
-@app.route('/periods')
-@jwt_required
+@app.route('/periods', methods=['GET'])
+# @jwt_required
 def periodsOfSystem():
-    all_courses = Course.objects.filter().values_list('dateStart')
-    periods = []
-    for course in all_courses:
-        if months[course.month-1]=="Julio":
-            period = "{} {}".format("{}-{}".format(months[course.month-1], months[course.month]), course.year)
-        elif months[course.month-1]=="Agosto":
-            period = "{} {}".format("{}-{}".format(months[course.month-2], months[course.month-1]), course.year)
-        else:
-            period = "{} {}".format(months[course.month-1], course.year)
-        if period not in periods:
-            periods.append(period)
-    return(jsonify({'message': periods}), 200)
+    if(request.method=='GET'):
+        all_courses = Course.objects.filter().values_list('dateStart')
+        periods = []
+        for course in all_courses:
+            if months[course.month-1]=="Julio":
+                period = "{} {}".format("{}-{}".format(months[course.month-1], months[course.month]), course.year)
+            elif months[course.month-1]=="Agosto":
+                period = "{} {}".format("{}-{}".format(months[course.month-2], months[course.month-1]), course.year)
+            else:
+                period = "{} {}".format(months[course.month-1], course.year)
+            if period not in periods:
+                periods.append(period)
+        return(jsonify({'message': periods}), 200)
 
-@app.route('/coursesByPeriod', methods=['POST'])
-@jwt_required
-def courses_by_period():
-    if(request.method=='POST'):
+@app.route('/coursesByPeriod/<period>', methods=['GET'])
+# @jwt_required
+def courses_by_period(period):
+    if(request.method=='GET'):
         all_courses = Course.objects.filter().values_list('dateStart', 'courseName', 'teacherRFC', 'timetable')
-        data = request.get_json()
         coursesToSend = []
-        periodDesglosado = data['period'].split(' ')
+        periodDesglosado = period.split(' ')
         if periodDesglosado[0] == 'Julio-Agosto':
             mesesDesglosados = periodDesglosado[0].split('-')
             listaQueContieneMesesAndYear = [months.index(mesesDesglosados[0])+1, months.index(mesesDesglosados[1])+1, int(periodDesglosado[1])]
@@ -290,8 +289,33 @@ def teachers():                     # Ruta para agregar un docente o consultar t
         return(jsonify(all_teachers[0]), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
-        try:
-            departament = Departament.objects.get(name=data['departament'])
+        if data['internal'] != False:
+            try:
+                departament = Departament.objects.get(name=data['departament'])
+                try:
+                    Teacher(
+                        rfc = data["rfc"],
+                        name = data["name"],
+                        fstSurname = data["fstSurname"],
+                        sndSurname = data["sndSurname"],
+                        numberPhone = data["numberPhone"],
+                        email = data["email"],
+                        internal = data["internal"],
+                        studyLevel = data["studyLevel"],
+                        degree = data["degree"],
+                        speciality = data["speciality"],
+                        departament = data["departament"],
+                        schedule = data["schedule"],
+                        position = data["position"],
+                        userType = data["userType"],
+                        pin = sha256.hash(data["pin"])
+                    ).save()
+                except:
+                    return(jsonify({'message': 'Docente previamente registrado'}), 401)
+                return(jsonify({'message': 'Docente agregado'}), 200)
+            except:
+                return(jsonify({'message': 'Departamento invalido'}), 404)
+        else:
             try:
                 Teacher(
                     rfc = data["rfc"],
@@ -304,20 +328,18 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                     studyLevel = data["studyLevel"],
                     degree = data["degree"],
                     speciality = data["speciality"],
-                    departament = data["departament"],
-                    schedule = data["schedule"],
-                    position = data["position"],
+                    departament = "",
+                    schedule = "",
+                    position = "",
                     userType = data["userType"],
                     pin = sha256.hash(data["pin"])
                 ).save()
+                return(jsonify({'message': 'Docente externo registrado'}), 200)
             except:
                 return(jsonify({'message': 'Docente previamente registrado'}), 401)
-            return(jsonify({'message': 'Docente agregado'}), 200)
-        except:
-            return(jsonify({'message': 'Departamento invalido'}), 404)
 
 @app.route('/teacher/<rfc>', methods=['GET', 'PUT', 'DELETE'])
-@jwt_required
+# @jwt_required
 def teacher(rfc):                # Ruta para consultar uno en especifico, editar info de un docente en especifico o borrar ese docente en especifico
     try:
         teacher = Teacher.objects.get(rfc=rfc)
