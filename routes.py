@@ -34,7 +34,6 @@ def check_if_token_in_blacklist(decrypted_token):           # Verifica que el to
 def login_user():                   # El tipico login de cada sistema
     data = request.get_json()
     try:
-        print(data)
         teacher = Teacher.objects.get(rfc=data["rfc"])
         if sha256.verify(data["pin"], teacher["pin"]):
             jwtIdentity = teacher["rfc"]
@@ -277,7 +276,7 @@ def edit_serial(course):            # Ruta para cambio de FOLIO
         return(jsonify({'message': 'Cambios guardados!'}), 200)
 
 @app.route('/teachers', methods=['GET', 'POST'])
-# @jwt_required
+@jwt_required
 def teachers():                     # Ruta para agregar un docente o consultar todos
     if (request.method == 'GET'):
         teachers = Teacher.objects.all()
@@ -341,7 +340,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                 return(jsonify({'message': 'Docente previamente registrado'}), 401)
 
 @app.route('/teacher/<rfc>', methods=['GET', 'PUT', 'DELETE'])
-# @jwt_required
+@jwt_required
 def teacher(rfc):                # Ruta para consultar uno en especifico, editar info de un docente en especifico o borrar ese docente en especifico
     try:
         teacher = Teacher.objects.get(rfc=rfc)
@@ -350,11 +349,12 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
     if request.method == 'GET':
         data = teacherSchema.dump(teacher)
         dictReturn = data[0]
-        for value in ('id', 'pin'):
+        dictReturn['name'] = "{} {} {}".format(dictReturn['name'], dictReturn['fstSurname'], dictReturn['sndSurname'])
+        for value in ('id', 'pin', 'fstSurname', 'sndSurname'):
             del dictReturn[value]
         return(jsonify(dictReturn), 200)
     elif request.method == 'PUT':
-        attributes = ('rfc', 'name', 'internal', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
+        attributes = ('rfc', 'name', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
         data = request.get_json()
         for value in attributes:
             teacher[value] = data[value]    
