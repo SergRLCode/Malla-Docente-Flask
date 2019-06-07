@@ -133,7 +133,7 @@ def courses():                      # Ruta para agregar un curso o consultar tod
             return(jsonify({"message": "Curso guardado."}), 200)
 
 @app.route('/periods', methods=['GET'])
-# @jwt_required
+@jwt_required
 def periodsOfSystem():
     if(request.method=='GET'):
         all_courses = Course.objects.filter().values_list('dateStart')
@@ -150,7 +150,7 @@ def periodsOfSystem():
         return(jsonify({'message': periods}), 200)
 
 @app.route('/coursesByPeriod/<period>', methods=['GET'])
-# @jwt_required
+@jwt_required
 def courses_by_period(period):
     if(request.method=='GET'):
         all_courses = Course.objects.filter().values_list('dateStart', 'courseName', 'teacherRFC', 'timetable')
@@ -289,6 +289,8 @@ def teachers():                     # Ruta para agregar un docente o consultar t
         return(jsonify(all_teachers[0]), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
+        if data['studyLevel'] == "Otro":
+            data['studyLevel'] = data['otherStudyLevel']
         if data['internal'] != False:
             try:
                 departament = Departament.objects.get(name=data['departament'])
