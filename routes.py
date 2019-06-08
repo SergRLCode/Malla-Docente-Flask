@@ -42,7 +42,7 @@ def login_user():                   # El tipico login de cada sistema
                 previousTkn.delete()
             except:
                 pass
-            access_token = create_access_token(identity = jwtIdentity, expires_delta=td(hours=1))
+            access_token = create_access_token(identity = jwtIdentity, expires_delta=td(hours=24))
             refresh_token = create_refresh_token(identity = jwtIdentity)
             numUser = 0 if teacher['userType']=='Administrador' else 1 if teacher['userType']=='Jefe de departamento' else 2 if teacher['userType']=='Comunicación' else 3
             return (jsonify({"data": {
@@ -100,7 +100,7 @@ def courses():                      # Ruta para agregar un curso o consultar tod
                 period = "{} {}".format(months[period.month-1], period.year)
             course['period'] = period
             teacherName = Teacher.objects.filter(rfc=course['teacherRFC']).values_list('name', 'fstSurname', 'sndSurname')
-            course['teacher'] = "{}_.|._{}_julianEsGay_{}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
+            course['teacher'] = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
         return(jsonify(data), 200)
     elif (request.method == 'POST'):
         data = request.get_json()
@@ -312,7 +312,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                         pin = sha256.hash(data["pin"])
                     ).save()
                 except:
-                    return(jsonify({'message': 'Docente previamente registrado'}), 401)
+                    return(jsonify({'message': 'Error, verifique bien la informacion'}), 401)
                 return(jsonify({'message': 'Docente agregado'}), 200)
             except:
                 return(jsonify({'message': 'Departamento invalido'}), 404)
@@ -340,7 +340,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                 return(jsonify({'message': 'Docente previamente registrado'}), 401)
 
 @app.route('/teacher/<rfc>', methods=['GET', 'PUT', 'DELETE'])
-@jwt_required
+# @jwt_required
 def teacher(rfc):                # Ruta para consultar uno en especifico, editar info de un docente en especifico o borrar ese docente en especifico
     try:
         teacher = Teacher.objects.get(rfc=rfc)
@@ -349,8 +349,7 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
     if request.method == 'GET':
         data = teacherSchema.dump(teacher)
         dictReturn = data[0]
-        dictReturn['name'] = "{} {} {}".format(dictReturn['name'], dictReturn['fstSurname'], dictReturn['sndSurname'])
-        for value in ('id', 'pin', 'fstSurname', 'sndSurname'):
+        for value in ('id', 'pin'):
             del dictReturn[value]
         return(jsonify(dictReturn), 200)
     elif request.method == 'PUT':
@@ -358,9 +357,32 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
         data = request.get_json()
         for value in attributes:
             teacher[value] = data[value]    
+        prevTeacher = Teacher.objects.get(position='Jefe de departamento', departament=data['departament'])
+        if(data['position']=='Jefe de departamento' and data['rfc']!=prevTeacher['rfc']):       # En caso que haya cambio de jefe, se cambia automaticamente al anterior
+            prevTeacher['userType'] = 'Docente'
+            prevTeacher['position'] = 'Docente chido'
+            prevTeacher.save()      
         teacher.save()
         return(jsonify({'message': 'Datos guardados.'}), 200)
     elif request.method == 'DELETE':
+        courses = Course.objects.filter(teachersInCourse__contains=teacher.rfc)
+        requests = RequestCourse.objects.filter(requests__contains=teacher.rfc)
+        blacklist = BlacklistRequest.objects.filter(requests__contains=teacher.rfc)
+        for course in courses:
+            course['teachersInCourse'].remove(rfc)
+            if not course['teachersInCourse']:
+                course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
+            course.save()
+        for reqst in requests:
+            reqst['requests'].remove(rfc)
+            reqst.save()
+            if(len(reqst['requests'])==0):
+                reqst.delete()
+        for reqst in blacklist:
+            reqst['requests'].remove(rfc)
+            reqst.save()
+            if(len(reqst['requests'])==0):
+                reqst.delete()
         advice = "{} eliminado".format(teacher.rfc)
         teacher.delete()
         return(jsonify({"message": advice}), 200)
@@ -626,23 +648,12 @@ def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente a
         except Course.DoesNotExist:
             return(jsonify({"message": "Curso inexistente"}), 404)
         all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')   # Obtiene todos los RFC de los docentes excepto el docente que imparte el curso
-        # restOfcourses = Course.objects.filter(courseName__ne=course_name).values_list('teachersInCourse', 'courseName') # Obtiene las listas de docentes de los demas cursos
         if(data['rfc'] not in all_rfc): # Verifica que exista el RFC                                   
             return(jsonify({'message': 'RFC invalido.'}), 401)
         else:   # En caso de que SI exista...
             if(data['rfc'] in course['teachersInCourse']):  # Verifica que el docente ya esta en la lista
                 return(jsonify({"message": "Docente agregado previamente."}), 200)
             else:   # Si no...
-                # hoursCourseOne = course['timetable'].split('-')  # Una marihuanada
-                # for rfcsCourse in restOfcourses: # Itera sobre el array que contiene los array de docentes de cada curso
-                #     if data['rfc'] in rfcsCourse[0]:   # Si el docente ya esta en un curso...
-                #         coursesData = Course.objects.filter(teachersInCourse=rfcsCourse[0], courseName=rfcsCourse[1]).values_list('timetable', 'dateStart', 'dateEnd', 'courseName') # Obtiene los datos del curso
-                #         hoursCourseTwo = coursesData[0][0].split('-')   # Otra marihuanada
-                #         if (coursesData[0][1] <= course['dateStart'] <= coursesData[0][2]) or (coursesData[0][1] <= course['dateEnd'] <= coursesData[0][2]): # Verifica que las fechas sean distintas, si no lo son...
-                #             """La condicion de abajo verifica las marihuanadas que hice, o sea, que la hora de inicio y 
-                #             finalizacion del curso, no este entre las horas de otro de inicio y finalizacion del curso"""
-                #             if (hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1]) or (hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]): 
-                #                 return jsonify({'message': 'Se empalma con otro curso a tomar'})
                 try:
                     courseRequest = RequestCourse.objects.get(course=course['courseName'])
                 except:
@@ -653,7 +664,7 @@ def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente a
                 else: 
                     return(jsonify({'message': 'No ha solicitado curso'}), 401)
                 if(len(courseRequest['requests'])==0):
-                    courseRequest.delete()  
+                    courseRequest.delete()
                 if(course['teachersInCourse'] == ["No hay docentes registrados"]):
                     course['teachersInCourse'] = []
                 course['teachersInCourse'].append(data['rfc'])
