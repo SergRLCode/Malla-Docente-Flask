@@ -472,10 +472,11 @@ def getInscriptionDocument(name):   # Ruta que regresa el PDF de la cedula de in
         except Course.DoesNotExist:
             return(jsonify({"message": "Curso inexistente"}), 404)
         teacher = Teacher.objects.get(rfc=get_jwt_identity())
-        departament = Departament.objects.get(name=teacher["departament"])
+        bossData = Teacher.objects.filter(position='Jefe de departamento', departament=teacher['departament']).values_list('name', 'fstSurname', 'sndSurname')
+        bossName = "{} {} {}".format(bossData[0][0], bossData[0][1], bossData[0][2])
         if(teacher['rfc'] not in course['teachersInCourse']):
             teacherWillTeach = Teacher.objects.filter(rfc=course['teacherRFC']).values_list("name", "fstSurname", "sndSurname")
-            return(inscription(teacher, departament, course, teacherWillTeach), 200)
+            return(inscription(teacher, bossName, course, teacherWillTeach), 200)
         else:
             return(jsonify({"message":"Ya esta en el curso"}), 401)
 

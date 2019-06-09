@@ -219,7 +219,7 @@ def coursesList(courses):
     story.append(KeepTogether(tableSigns))
     return returnPDF(story, "ListaDeCursos", landscape(letter), 105)
 
-def inscription(teacher, departament, course, teacherWillTeach):
+def inscription(teacher, bossName, course, teacherWillTeach):
     getMetaData("5cb0c16bab661b27708563a7")
     tableTitleList = [
         [set_H2("Cédula de Inscripción")]
@@ -253,8 +253,8 @@ def inscription(teacher, departament, course, teacherWillTeach):
     ]
     tableLaboralDataList = [
         [set_H1("3. DATOS LABORALES")],
-        [set_RN('Departamento académico:'), set_N(departament["name"])],
-        [set_RN('Jefe Inmediato:'), set_N(departament['boss'])],
+        [set_RN('Departamento académico:'), set_N(teacher['departament'])],
+        [set_RN('Jefe Inmediato:'), set_N(bossName)],
         [set_RN('Puesto actual:'), set_N(teacher['position'])],
         [set_RN('Horario:'), set_N(teacher['schedule'])]
     ]
