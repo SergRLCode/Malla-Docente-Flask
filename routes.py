@@ -340,7 +340,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                 return(jsonify({'message': 'Docente previamente registrado'}), 401)
 
 @app.route('/teacher/<rfc>', methods=['GET', 'PUT', 'DELETE'])
-# @jwt_required
+@jwt_required
 def teacher(rfc):                # Ruta para consultar uno en especifico, editar info de un docente en especifico o borrar ese docente en especifico
     try:
         teacher = Teacher.objects.get(rfc=rfc)
@@ -497,16 +497,19 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
             return(jsonify({'message': 'Curso inexistente.'}), 404)
             
 @app.route('/dataConcentrated', methods=['GET'])
-@jwt_required
+# @jwt_required
 def data_con():                         # Ruta que regresa un PDF con los datos de los cursos concentrados
     if(request.method=='GET'):
         # Nombres de los cursos
         depName = []
         totaldepTeacherNum = 0
-        departaments = Departament.objects.all()
-        for departament in departaments:
-            depName.append(departament['name'])
-        depName.remove('Desarrollo Académico')
+        depas = Teacher.objects.filter().values_list('departament')
+        print(depas)
+        for val in depas:
+            if val not in depName:
+                depName.append(val)
+        if "" in depName:
+            depName.remove("")
         # Docentes por departamento
         depTeacherNum = []
         for val in depName:
@@ -732,46 +735,6 @@ def addinfoView():                      # Only works to add meta data for each l
             emitDate = data['emitDate']
         ).save()
         return(jsonify({"message": "Added"}), 200)
-
-@app.route('/departaments', methods=['GET', 'POST'])
-# @jwt_required
-def adddepaView():                      # Only works to add departament info for each letterhead, next change will update departament info
-    if(request.method == 'GET'):
-        info = Departament.objects.all()
-        return jsonify(info)
-    elif(request.method == 'POST'):
-        data = request.get_json()
-        Departament(
-            name = data["name"],
-            boss = data["boss"]
-        ).save()
-        return(jsonify({"message": "Added"}), 200)
-
-@app.route('/departament/<name>', methods=['PUT'])
-@jwt_required
-def departament_view(name):
-    try:
-        dep = Departament.objects.get(name=name)
-        data=request.get_json()
-    except:
-        return(jsonify({'message': "Don't exists"}), 404)
-    if(request.method=='PUT'):
-        try:
-            teacher = Teacher.objects.get(rfc=data['boss'])
-        except:
-            return jsonify({'message': 'RFC invalido'}), 401
-        try:
-            prevTeacher = Teacher.objects.get(rfc=dep['boss'])
-        except:
-            pass
-        prevTeacher['userType'] = 'Docente'
-        teacher['userType'] = 'Jefe de departamento'
-        dep['name'] = data['name']
-        dep['boss'] = data['boss']
-        prevTeacher.save()
-        teacher.save()
-        dep.save()
-        return(jsonify({'message': 'Success!'}), 200)
 
 @app.errorhandler(404)
 @jwt_required

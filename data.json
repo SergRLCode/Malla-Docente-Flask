@@ -1,0 +1,4 @@
+{"_id":{"$oid":"5cb0b321ab661b1fea0178be"},"nameDocument":"PROGRAMA INSTITUCIONAL DE FORMACION Y ACTUALIZACION DOCENTE Y PROFESIONAL","typeDocument":"FORMATO","version":0,"emitDate":{"$date":"2015-04-13T00:00:00.000Z"}}
+{"_id":{"$oid":"5cb0c0beab661b261edfea32"},"nameDocument":"LISTA DE ASISTENCIA","typeDocument":"REGISTRO","version":0,"emitDate":{"$date":"2015-04-13T00:00:00.000Z"}}
+{"_id":{"$oid":"5cb0c16bab661b27708563a7"},"nameDocument":"Cédula de Inscripción al PICDAP","typeDocument":"REGISTRO","version":0,"emitDate":{"$date":"2015-04-13T00:00:00.000Z"}}
+{"_id":{"$oid":"5cb0c19dab661b27708563a8"},"nameDocument":"Encuesta para participantes inscritos al PICDAP","typeDocument":"FORMATO","version":0,"emitDate":{"$date":"2015-04-13T00:00:00.000Z"}}
