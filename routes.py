@@ -106,6 +106,8 @@ def courses():                      # Ruta para agregar un curso o consultar tod
         totalDays = (dt.strptime(data['dateEnd'], "%Y-%m-%d")-dt.strptime(data['dateStart'], "%Y-%m-%d")).days+1
         hours = data['timetable'].replace(":00", "").split('-')
         totalHrs = totalDays*(int(hours[1])-int(hours[0]))
+        if totalHrs <= 0 or totalHrs > 40:
+            return(jsonify({'message': 'Verifique bien las fechas y horas'}), 400)
         if data['teacherRFC'] not in all_rfc:
             return(jsonify({"message": "Error, RFC no valido."}), 404)
         try:
@@ -175,12 +177,14 @@ def courses_by_period(period):
 @jwt_required
 def available_courses():            # Ruta que retorna una lista con los cursos disponibles, siendo el dia de inicio mayor a la fecha del servidor
     if(request.method=='GET'):
-        availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC', 'timetable')
+        availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC', 'timetable', 'teachersInCourse')
+        coursesRequested = RequestCourse.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
         arrayToSend = []
         for vals in availableCourses:
-            teacherName = Teacher.objects.filter(rfc=vals[1]).values_list('name', 'fstSurname', 'sndSurname')
-            completeName = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
-            arrayToSend.append({'courseName': vals[0], 'teacherName': completeName, 'timetable': vals[2]})
+            if get_jwt_identity()[0] not in vals[3] and vals[0] not in coursesRequested:
+                teacherName = Teacher.objects.filter(rfc=vals[1]).values_list('name', 'fstSurname', 'sndSurname')
+                completeName = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
+                arrayToSend.append({'courseName': vals[0], 'teacherName': completeName, 'timetable': vals[2]})
         return(jsonify({'message': arrayToSend}), 200)
 
 @app.route('/course/<name>', methods=['GET', 'PUT', 'DELETE'])
@@ -495,7 +499,7 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
             return(jsonify({'message': 'Curso inexistente.'}), 404)
             
 @app.route('/dataConcentrated', methods=['GET'])
-# @jwt_required
+@jwt_required
 def data_con():                         # Ruta que regresa un PDF con los datos de los cursos concentrados
     if(request.method=='GET'):
         # Nombres de los cursos
