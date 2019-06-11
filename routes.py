@@ -36,7 +36,8 @@ def login_user():                   # El tipico login de cada sistema
     try:
         teacher = Teacher.objects.get(rfc=data["rfc"])
         if sha256.verify(data["pin"], teacher["pin"]):
-            jwtIdentity = teacher["rfc"]
+            numUser = 0 if teacher['userType']=='Administrador' else 1 if teacher['userType']=='Jefe de departamento' else 2 if teacher['userType']=='Comunicación' else 3
+            jwtIdentity = [teacher["rfc"], numUser]
             try:
                 previousTkn = BlacklistJWT.objects.filter(identity=jwtIdentity).values_list('identity')
                 previousTkn.delete()
@@ -44,12 +45,9 @@ def login_user():                   # El tipico login de cada sistema
                 pass
             access_token = create_access_token(identity = jwtIdentity, expires_delta=td(hours=24))
             refresh_token = create_refresh_token(identity = jwtIdentity)
-            numUser = 0 if teacher['userType']=='Administrador' else 1 if teacher['userType']=='Jefe de departamento' else 2 if teacher['userType']=='Comunicación' else 3
             return (jsonify({"data": {
                 'message': '{} {} {}'.format(teacher["name"], teacher["fstSurname"], teacher["sndSurname"]),
-                'type': numUser,
-                'access_token': access_token,
-                'refresh_token': refresh_token
+                'access_token': access_token
             }}), 200)
         else:
             return(jsonify({"data": {"message": "NIP incorrecto"}}), 401)
@@ -59,14 +57,14 @@ def login_user():                   # El tipico login de cada sistema
 @app.route('/refresh', methods=['GET'])
 @jwt_refresh_token_required
 def refresh_jwt():                  # Ruta que regresa otro JWT para el acceso 
-    access_token = create_access_token(identity = get_jwt_identity(), expires_delta=td(hours=1))
+    access_token = create_access_token(identity = get_jwt_identity()[0], expires_delta=td(hours=1))
     return(jsonify({'access_token': access_token}), 200)
 
 @app.route('/logoutA', methods=['GET'])
 @jwt_required
 def logout_user():                  # Un logout que agrega el ID del JWT de acceso en una coleccion para evitar el uso de este JWT 
     _jwt = get_raw_jwt()['jti']
-    _rfc = get_jwt_identity()
+    _rfc = get_jwt_identity()[0]
     BlacklistJWT(
         jwt = _jwt,
         identity = _rfc
@@ -77,7 +75,7 @@ def logout_user():                  # Un logout que agrega el ID del JWT de acce
 @jwt_refresh_token_required
 def logout_user2():                  # Un logout que agrega el ID del JWT de actualizacion en una coleccion para evitar el uso de este JWT
     _jwt = get_raw_jwt()['jti']
-    _rfc = get_jwt_identity()
+    _rfc = get_jwt_identity()[0]
     BlacklistJWT(
         jwt = _jwt,
         identity = _rfc
@@ -225,8 +223,8 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
 @jwt_required
 def course_request(name):           # Ruta en la cual el docente agrega su RFC para peticion de tomar un curso
     course = Course.objects.filter(courseName=name).values_list('timetable', 'dateStart', 'dateEnd', 'courseName', 'teacherRFC')
-    courseWillTeach = Course.objects.filter(teacherRFC=get_jwt_identity()).values_list('timetable', 'dateStart', 'dateEnd', 'courseName', 'teacherRFC')
-    requestedAlready = Course.objects.filter(courseName=name, teachersInCourse__contains=get_jwt_identity())
+    courseWillTeach = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('timetable', 'dateStart', 'dateEnd', 'courseName', 'teacherRFC')
+    requestedAlready = Course.objects.filter(courseName=name, teachersInCourse__contains=get_jwt_identity()[0])
     blacklisted = BlacklistRequest.objects.filter(course=name)
     if(len(blacklisted)>0):                                                       # checa que no este en la blacklist
         return(jsonify({'message': 'Ya no puede solicitar el curso'}), 401)
@@ -235,19 +233,19 @@ def course_request(name):           # Ruta en la cual el docente agrega su RFC p
     if len(course) == 0:                                                        # checa si existe el curso
         return(jsonify({'message': "Curso inexistente"}), 401)
     else:                                                                       # NOTA: preguntar hasta cuando se puede solicitar un curso
-        if(course[0][4]==get_jwt_identity()):
+        if(course[0][4]==get_jwt_identity()[0]):
             return(jsonify({'message': 'Usted imparte el curso'}), 401)    
         else:
             try:
                 courseInRequest = RequestCourse.objects.get(course=course[0][3])
-                if get_jwt_identity() not in courseInRequest['requests']:
+                if get_jwt_identity()[0] not in courseInRequest['requests']:
                     if len(courseWillTeach)>0:
                         if(courseWillTeach[0][1] <= course[0][1] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course[0][2] <= courseWillTeach[0][2]):
                             hoursCourseOne = course[0][0].split('-')  # Una marihuanada
                             hoursCourseTwo = courseWillTeach[0][0].split('-')
                             if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
                                 return(jsonify({'message': 'Se empalma con la materia que imparte'}), 401)  
-                    courseInRequest["requests"].append(get_jwt_identity())
+                    courseInRequest["requests"].append(get_jwt_identity()[0])
                     courseInRequest.save()
                     return(jsonify({'message': 'Solicitud enviada!'}), 200)
                 else:
@@ -261,7 +259,7 @@ def course_request(name):           # Ruta en la cual el docente agrega su RFC p
                             return(jsonify({'message': 'Se empalma con la materia que imparte'}), 401)  
                 RequestCourse(
                     course = course[0][3],
-                    requests = [get_jwt_identity()]
+                    requests = [get_jwt_identity()[0]]
                 ).save()
                 return(jsonify({'message': 'Solicitud enviada!'}), 200)
 
@@ -392,7 +390,7 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
 def change_password():          # No es necesario mencionar para que es, con el puro nombre de la funcion se ve
     if(request.method=='POST'):
         data = request.get_json()
-        teacher = Teacher.objects.get(rfc=get_jwt_identity())
+        teacher = Teacher.objects.get(rfc=get_jwt_identity()[0])
         if(sha256.verify(data['pin'], teacher['pin'])):
             teacher['pin'] = sha256.hash(data['newPin'])
             teacher.save()
@@ -404,7 +402,7 @@ def change_password():          # No es necesario mencionar para que es, con el 
 @jwt_required
 def my_courses():                    # Regresa todos los cursos en los que se ha registrado el docente
     if(request.method == 'GET'):
-        courses = Course.objects.filter(teachersInCourse__contains=get_jwt_identity()).values_list('courseName')
+        courses = Course.objects.filter(teachersInCourse__contains=get_jwt_identity()[0]).values_list('courseName')
         if len(courses) > 0:
             _mycourses = []
             for val in courses:
@@ -471,7 +469,7 @@ def getInscriptionDocument(name):   # Ruta que regresa el PDF de la cedula de in
             course = Course.objects.get(courseName=name)
         except Course.DoesNotExist:
             return(jsonify({"message": "Curso inexistente"}), 404)
-        teacher = Teacher.objects.get(rfc=get_jwt_identity())
+        teacher = Teacher.objects.get(rfc=get_jwt_identity()[0])
         bossData = Teacher.objects.filter(position='Jefe de departamento', departament=teacher['departament']).values_list('name', 'fstSurname', 'sndSurname')
         bossName = "{} {} {}".format(bossData[0][0], bossData[0][1], bossData[0][2])
         if(teacher['rfc'] not in course['teachersInCourse']):
@@ -486,9 +484,9 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
     if(request.method == 'POST'):
         courseData = Course.objects.filter(courseName=name).values_list('courseName', 'teacherRFC', 'place', 'dateStart', 'dateEnd', 'totalHours', 'timetable', 'teachersInCourse')
         if len(courseData)!=0:
-            if get_jwt_identity() in courseData[0][7]:
+            if get_jwt_identity()[0] in courseData[0][7]:
                 teacherThatTeach = Teacher.objects.filter(rfc=courseData[0][1]).values_list('name', 'fstSurname', 'sndSurname')
-                departament = Teacher.objects.filter(rfc=get_jwt_identity()).values_list('departament')
+                departament = Teacher.objects.filter(rfc=get_jwt_identity()[0]).values_list('departament')
                 data = request.get_json()
                 return(pollDocument(data, courseData, teacherThatTeach, departament[0]), 200)
             else:
@@ -635,12 +633,6 @@ def data_con():                         # Ruta que regresa un PDF con los datos 
         return(concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados, depPercentYesCoursed, noCapacitados, depPercentNoCoursed, totalCourses), 200)
 
 #  ==> --> In Develop <-- <==
-
-# Example of route with JWT 
-@app.route('/pull')
-@jwt_required
-def pull():
-    return jsonify({"message": "Hello {}".format(get_jwt_identity())})
 
 @app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
 @jwt_required
