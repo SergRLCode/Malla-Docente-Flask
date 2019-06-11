@@ -104,6 +104,8 @@ def returnPDF(story, name, size, top):
     response = make_response(pdf_out)
     response.headers['Content-Disposition'] = "attachment; filename={}.pdf".format(name)
     response.headers['Content-Type'] = 'application/pdf'
+    # print(type(response.data))
+    print(dir(response))
     return response
 # --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <--
 def assistantList(teachers, courseTeacher, course):
