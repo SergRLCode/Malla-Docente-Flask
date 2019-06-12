@@ -54,26 +54,9 @@ def login_user():                   # El tipico login de cada sistema
     except Teacher.DoesNotExist:
         return(jsonify({"data": {"message": "Docente no registrado"}}), 404)
 
-@app.route('/refresh', methods=['GET'])
-@jwt_refresh_token_required
-def refresh_jwt():                  # Ruta que regresa otro JWT para el acceso 
-    access_token = create_access_token(identity = get_jwt_identity()[0], expires_delta=td(hours=1))
-    return(jsonify({'access_token': access_token}), 200)
-
 @app.route('/logoutA', methods=['GET'])
 @jwt_required
 def logout_user():                  # Un logout que agrega el ID del JWT de acceso en una coleccion para evitar el uso de este JWT 
-    _jwt = get_raw_jwt()['jti']
-    _rfc = get_jwt_identity()[0]
-    BlacklistJWT(
-        jwt = _jwt,
-        identity = _rfc
-    ).save()
-    return(jsonify({'message': 'Bye bye!'}), 200)
-
-@app.route('/logoutR', methods=['GET'])
-@jwt_refresh_token_required
-def logout_user2():                  # Un logout que agrega el ID del JWT de actualizacion en una coleccion para evitar el uso de este JWT
     _jwt = get_raw_jwt()['jti']
     _rfc = get_jwt_identity()[0]
     BlacklistJWT(

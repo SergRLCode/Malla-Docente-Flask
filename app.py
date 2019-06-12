@@ -19,18 +19,3 @@ from routes import *
 
 if __name__ == '__main__':
    app.run(debug=True)
-
-# First upload
-# git init 
-# git add . or folder
-# git commit -m "Mi comentario"
-# git set-url remote origin git@github.com:My_User/Repository.git
-# git pull --rebase origin master
-# git push origin master
-# Nota: origin es la carpeta de origen, o sea en donde esta el proyecto xd
-
-# Upload proyect Github
-# git init 
-# git add . or folder
-# git commit -m "Mi comentario"
-# git push origin master

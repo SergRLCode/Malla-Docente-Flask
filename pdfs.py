@@ -14,6 +14,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from io import StringIO, BytesIO
 from pdfStyles import *
+import base64
 
 # Dict for metadata to landscapeLetterhead
 metaData = {
@@ -104,8 +105,7 @@ def returnPDF(story, name, size, top):
     response = make_response(pdf_out)
     response.headers['Content-Disposition'] = "attachment; filename={}.pdf".format(name)
     response.headers['Content-Type'] = 'application/pdf'
-    # print(type(response.data))
-    print(dir(response))
+    # print(type(base64.b64decode(response.data)))
     return response
 # --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <-- --> <--
 def assistantList(teachers, courseTeacher, course):
