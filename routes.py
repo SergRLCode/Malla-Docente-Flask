@@ -10,6 +10,9 @@ from marsh import *
 
 months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
+def periodOfTime(initDate, endDate):
+    return 'Del {} al {} de {} del {}'.format(initDate.day, endDate.day, months[endDate.month-1], endDate.year) if initDate.month==endDate.month else 'Del {} de {} al {} de {} del {}'.format(initDate.day, months[initDate.month-1], endDate.day, months[endDate.month-1], endDate.year) if initDate.year==endDate.year else 'Del {} de {} del {} al {} de {} del {}'.format(initDate.day, months[initDate.month-1], initDate.year, endDate.day, months[endDate.month-1], endDate.year)
+
 @jwt.token_in_blacklist_loader
 def check_if_token_in_blacklist(decrypted_token):           # Verifica que el token no este en la blacklist
     jti = decrypted_token['jti']
@@ -402,9 +405,9 @@ def my_courses():                    # Regresa todos los cursos en los que se ha
 @jwt_required
 def my_courses_will_teach():
     coursesWillTeach = []
-    courses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName', 'timetable')
+    courses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName', 'timetable', 'dateStart', 'dateEnd')
     for course in courses:
-        coursesWillTeach.append({'courseName': course[0], 'timetable': course[1]})
+        coursesWillTeach.append({'courseName': course[0], 'timetable': course[1], 'duration': periodOfTime(course[2], course[3])})
     return jsonify({'courses': coursesWillTeach}), 200
 
 @app.route('/courses/coursesList', methods=['GET'])
