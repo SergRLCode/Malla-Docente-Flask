@@ -398,6 +398,15 @@ def my_courses():                    # Regresa todos los cursos en los que se ha
         else:
             return(jsonify({'message': 'No esta registrado en ningun curso'}), 404)
 
+@app.route('/myCoursesWillTeach', methods=['GET'])
+@jwt_required
+def my_courses_will_teach():
+    coursesWillTeach = []
+    courses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName', 'timetable')
+    for course in courses:
+        coursesWillTeach.append({'courseName': course[0], 'timetable': course[1]})
+    return jsonify({'courses': coursesWillTeach}), 200
+
 @app.route('/courses/coursesList', methods=['GET'])
 @jwt_required
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 
