@@ -410,6 +410,20 @@ def my_courses_will_teach():
         coursesWillTeach.append({'courseName': course[0], 'timetable': course[1], 'duration': periodOfTime(course[2], course[3])})
     return jsonify({'courses': coursesWillTeach}), 200
 
+@app.route('/requestsTo/<name>')
+# @jwt_required
+def requests_to(name):
+    requests = RequestCourse.objects.get(course=name)
+    objtToSend = {
+        'rfcs': [],
+        'names': []
+    }
+    for val in requests['requests']:
+        teacherName = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
+        objtToSend['rfcs'].append(val)
+        objtToSend['names'].append("{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]))
+    return jsonify(objtToSend), 200
+
 @app.route('/courses/coursesList', methods=['GET'])
 @jwt_required
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 
@@ -631,8 +645,6 @@ def data_con():                         # Ruta que regresa un PDF con los datos 
         totalCourses = [len(numOfCD), len(numOfAP)]
         return(concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados, depPercentYesCoursed, noCapacitados, depPercentNoCoursed, totalCourses), 200)
 
-#  ==> --> In Develop <-- <==
-
 @app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
 @jwt_required
 def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente aceptado al curso seleccionado
@@ -735,3 +747,5 @@ def page_not_found(error):
         "message": "Pagina no encontrada"
     }
     return(jsonify(error), 404)
+
+#  ==> --> In Develop <-- <==
