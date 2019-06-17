@@ -411,18 +411,17 @@ def my_courses_will_teach():
     return jsonify({'courses': coursesWillTeach}), 200
 
 @app.route('/requestsTo/<name>')
-# @jwt_required
+@jwt_required
 def requests_to(name):
     requests = RequestCourse.objects.get(course=name)
-    objtToSend = {
-        'rfcs': [],
-        'names': []
-    }
+    arrayToSend = []
     for val in requests['requests']:
         teacherName = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
-        objtToSend['rfcs'].append(val)
-        objtToSend['names'].append("{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]))
-    return jsonify(objtToSend), 200
+        arrayToSend.append({
+            'rfc': val,
+            'name': "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
+        })
+    return jsonify(arrayToSend), 200
 
 @app.route('/courses/coursesList', methods=['GET'])
 @jwt_required
