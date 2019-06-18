@@ -22,14 +22,16 @@ def check_if_token_in_blacklist(decrypted_token):           # Verifica que el to
     courses = Course.objects.all()
     for course in courses:
         hours = course['timetable'].split('-')
-        if course['dateStart'].date() == dt.now().date():
-            if str(dt.now().hour) >= hours[0].replace(':00', ""):
+        if course['dateStart'].date() <= dt.now().date():
+            if dt.now().hour >= int(hours[0].replace(':00', "")):
                 course['state'] = 'Cursando'
-                course.save()
-        if course['dateEnd'].date() == dt.now().date():   
-            if str(dt.now().hour) >= hours[1].replace(':00', ""):
+        if course['dateEnd'].date() <= dt.now().date():
+            if course['dateEnd'].date() == dt.now().date():
+                if dt.now().hour >= int(hours[1].replace(':00', "")):
+                    course['state'] = 'Terminado'
+            else:
                 course['state'] = 'Terminado'
-                course.save()
+        course.save()
     for value in _jwt:
         if (jti==value['jwt']):
             return True             # Si regresa un booleano False, permite el accesso, si regresa True, marca que se revoco el JWT
@@ -164,14 +166,19 @@ def courses_by_period(period):
 @jwt_required
 def available_courses():            # Ruta que retorna una lista con los cursos disponibles, siendo el dia de inicio mayor a la fecha del servidor
     if(request.method=='GET'):
-        availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC', 'timetable', 'teachersInCourse')
+        availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC', 'timetable', 'teachersInCourse', 'state')
         coursesRequested = RequestCourse.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
         arrayToSend = []
         for vals in availableCourses:
             if get_jwt_identity()[0] not in vals[3] and vals[0] not in coursesRequested:
                 teacherName = Teacher.objects.filter(rfc=vals[1]).values_list('name', 'fstSurname', 'sndSurname')
                 completeName = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
-                arrayToSend.append({'courseName': vals[0], 'teacherName': completeName, 'timetable': vals[2]})
+                arrayToSend.append({
+                    'courseName': vals[0],
+                    'teacherName': completeName, 
+                    'timetable': vals[2], 
+                    'state': vals[4]
+                })
         return(jsonify({'message': arrayToSend}), 200)
 
 @app.route('/course/<name>', methods=['GET', 'PUT', 'DELETE'])
@@ -183,9 +190,16 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         return(jsonify({"message": "Don't exists"}), 404)
     if (request.method == 'GET'):################################################### Ya no moverle
         datos = courseSchema.dump(course)
+        limitDays = int(redis.get('days').decode('utf-8'))
         newDictToSend = datos[0]
+        endDay = dt.strptime(datos[0]['dateEnd'].replace("T00:00:00+00:00", ""), "%Y-%m-%d")
         for key in ('teachersInCourse', 'id', 'serial'):
             del newDictToSend[key]
+        print(dt.now().date() <= endDay.date()+td(days=limitDays))
+        if newDictToSend['state'] == 'Terminado' and dt.now().date() <= endDay.date()+td(days=limitDays):
+            newDictToSend['allowPoll'] = True
+        else:
+            newDictToSend['allowPoll'] = False
         teacherWillteach = Teacher.objects.filter(rfc=course['teacherRFC']).values_list("name", "fstSurname", "sndSurname")
         newDictToSend['teacherName'] = "{} {} {}".format(teacherWillteach[0][0], teacherWillteach[0][1], teacherWillteach[0][2])
         return(jsonify(newDictToSend), 200)
@@ -194,7 +208,7 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         totalDays = (dt.strptime(data['dateEnd'], "%Y-%m-%d")-dt.strptime(data['dateStart'], "%Y-%m-%d")).days+1
         hours = data['timetable'].replace(":00", "").split('-')
         totalHrs = totalDays*(int(hours[1])-int(hours[0]))
-        attributes = ("courseName", "courseTo", "place", "description", "dateStart", "dateEnd", "modality", "state", "timetable", "typeCourse")
+        attributes = ("courseName", "courseTo", "place", "description", "dateStart", "dateEnd", "modality", "timetable", "typeCourse")
         all_rfc = Teacher.objects.all().values_list('rfc')        
         for attribute in attributes:
             course[attribute] = data[attribute]
