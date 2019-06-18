@@ -5,8 +5,9 @@ from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
 from passlib.hash import pbkdf2_sha256 as sha256
 from reportlab.pdfgen import canvas
-from app import app, jwt
+from app import app, jwt, redis
 from marsh import *
+
 
 months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
@@ -263,6 +264,28 @@ def edit_serial(course):            # Ruta para cambio de FOLIO
         course.save()
         return(jsonify({'message': 'Cambios guardados!'}), 200)
 
+@app.route('/myCourses', methods=['GET'])
+@jwt_required
+def my_courses():                    # Regresa todos los cursos en los que se ha registrado el docente
+    if(request.method == 'GET'):
+        courses = Course.objects.filter(teachersInCourse__contains=get_jwt_identity()[0]).values_list('courseName')
+        if len(courses) > 0:
+            _mycourses = []
+            for val in courses:
+                _mycourses.append(val)
+            return(jsonify({'message': _mycourses}), 200)
+        else:
+            return(jsonify({'message': 'No esta registrado en ningun curso'}), 404)
+
+@app.route('/myCoursesWillTeach', methods=['GET'])
+@jwt_required
+def my_courses_will_teach():
+    coursesWillTeach = []
+    courses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName', 'timetable', 'dateStart', 'dateEnd')
+    for course in courses:
+        coursesWillTeach.append({'courseName': course[0], 'timetable': course[1], 'duration': periodOfTime(course[2], course[3])})
+    return jsonify({'courses': coursesWillTeach}), 200
+
 @app.route('/teachers', methods=['GET', 'POST'])
 @jwt_required
 def teachers():                     # Ruta para agregar un docente o consultar todos
@@ -388,28 +411,6 @@ def change_password():          # No es necesario mencionar para que es, con el 
         else:
             return(jsonify({'message': 'Clave previa incorrecta'}), 401)
 
-@app.route('/myCourses', methods=['GET'])
-@jwt_required
-def my_courses():                    # Regresa todos los cursos en los que se ha registrado el docente
-    if(request.method == 'GET'):
-        courses = Course.objects.filter(teachersInCourse__contains=get_jwt_identity()[0]).values_list('courseName')
-        if len(courses) > 0:
-            _mycourses = []
-            for val in courses:
-                _mycourses.append(val)
-            return(jsonify({'message': _mycourses}), 200)
-        else:
-            return(jsonify({'message': 'No esta registrado en ningun curso'}), 404)
-
-@app.route('/myCoursesWillTeach', methods=['GET'])
-@jwt_required
-def my_courses_will_teach():
-    coursesWillTeach = []
-    courses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName', 'timetable', 'dateStart', 'dateEnd')
-    for course in courses:
-        coursesWillTeach.append({'courseName': course[0], 'timetable': course[1], 'duration': periodOfTime(course[2], course[3])})
-    return jsonify({'courses': coursesWillTeach}), 200
-
 @app.route('/requestsTo/<name>')
 @jwt_required
 def requests_to(name):
@@ -422,6 +423,84 @@ def requests_to(name):
             'name': "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
         })
     return jsonify(arrayToSend), 200
+    
+@app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
+@jwt_required
+def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente aceptado al curso seleccionado
+    if(request.method == 'POST'):
+        data = request.get_json()
+        try:
+            course = Course.objects.get(courseName=course_name)   # Obtiene la informacion del curso seleccionado
+        except Course.DoesNotExist:
+            return(jsonify({"message": "Curso inexistente"}), 404)
+        all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')   # Obtiene todos los RFC de los docentes excepto el docente que imparte el curso
+        if(data['rfc'] not in all_rfc): # Verifica que exista el RFC                                   
+            return(jsonify({'message': 'RFC invalido.'}), 401)
+        else:   # En caso de que SI exista...
+            if(data['rfc'] in course['teachersInCourse']):  # Verifica que el docente ya esta en la lista
+                return(jsonify({"message": "Docente agregado previamente."}), 200)
+            else:   # Si no...
+                try:
+                    courseRequest = RequestCourse.objects.get(course=course['courseName'])
+                except:
+                    return jsonify({'message': 'Peticion invalida'}), 404
+                if data['rfc'] in courseRequest['requests']:
+                    courseRequest['requests'].remove(data['rfc'])
+                    courseRequest.save()
+                else: 
+                    return(jsonify({'message': 'No ha solicitado curso'}), 401)
+                if(len(courseRequest['requests'])==0):
+                    courseRequest.delete()
+                if(course['teachersInCourse'] == ["No hay docentes registrados"]):
+                    course['teachersInCourse'] = []
+                course['teachersInCourse'].append(data['rfc'])
+                course.save()
+                return(jsonify({'message': 'Docente agregado con exito.'}), 200)
+
+@app.route('/rejectTeacherOfCourse/<name>', methods=['POST'])
+@jwt_required
+def rejectTeacherOfCourse_view(name):       # Ruta que elimina el RFC del docente rechazado del curso
+    if(request.method == 'POST'):
+        data = request.get_json()
+        try:
+            courseRequest = RequestCourse.objects.get(course=name)
+        except:
+            return jsonify({'message': 'Peticion invalida'}), 404
+        if(data['rfc'] in courseRequest['requests']):
+            courseRequest['requests'].remove(data['rfc'])
+            courseRequest.save()
+            if(len(courseRequest['requests'])==0):
+                courseRequest.delete()
+            try:
+                blacklist = BlacklistRequest.objects.get(course=name)
+                blacklist['requests'].append(data['rfc'])
+                blacklist.save()
+            except:
+                BlacklistRequest(
+                    course=name,
+                    requests=[data['rfc']]
+                ).save()
+            return(jsonify({'message': "Rechazado, asi como ella me rechazo a mi :'v"}), 201)
+        else:
+            return(jsonify({'message': 'RFC inexistente'}), 500)
+
+@app.route('/removeTeacherinCourse/<name>', methods=['POST'])
+@jwt_required
+def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso 
+    if(request.method == 'POST'):
+        data = request.get_json()
+        try:
+            course = Course.objects.get(courseName=name)
+        except Course.DoesNotExist:
+            return(jsonify({"message": "Curso inexistente"}), 401)
+        if(data['rfc'] in course['teachersInCourse']):
+            course['teachersInCourse'].remove(data['rfc'])
+            if not course['teachersInCourse']:
+                course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
+            course.save()
+            return(jsonify({"message": "Docente dado de baja exitosamente"}), 200)
+        else:
+            return(jsonify({"message": "No existe en la lista"}), 401)
 
 @app.route('/courses/coursesList', methods=['GET'])
 @jwt_required
@@ -643,84 +722,6 @@ def data_con():                         # Ruta que regresa un PDF con los datos 
         numOfAP = Course.objects.filter(typeCourse='Profesional')
         totalCourses = [len(numOfCD), len(numOfAP)]
         return(concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados, depPercentYesCoursed, noCapacitados, depPercentNoCoursed, totalCourses), 200)
-
-@app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
-@jwt_required
-def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente aceptado al curso seleccionado
-    if(request.method == 'POST'):
-        data = request.get_json()
-        try:
-            course = Course.objects.get(courseName=course_name)   # Obtiene la informacion del curso seleccionado
-        except Course.DoesNotExist:
-            return(jsonify({"message": "Curso inexistente"}), 404)
-        all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')   # Obtiene todos los RFC de los docentes excepto el docente que imparte el curso
-        if(data['rfc'] not in all_rfc): # Verifica que exista el RFC                                   
-            return(jsonify({'message': 'RFC invalido.'}), 401)
-        else:   # En caso de que SI exista...
-            if(data['rfc'] in course['teachersInCourse']):  # Verifica que el docente ya esta en la lista
-                return(jsonify({"message": "Docente agregado previamente."}), 200)
-            else:   # Si no...
-                try:
-                    courseRequest = RequestCourse.objects.get(course=course['courseName'])
-                except:
-                    return jsonify({'message': 'Peticion invalida'}), 404
-                if data['rfc'] in courseRequest['requests']:
-                    courseRequest['requests'].remove(data['rfc'])
-                    courseRequest.save()
-                else: 
-                    return(jsonify({'message': 'No ha solicitado curso'}), 401)
-                if(len(courseRequest['requests'])==0):
-                    courseRequest.delete()
-                if(course['teachersInCourse'] == ["No hay docentes registrados"]):
-                    course['teachersInCourse'] = []
-                course['teachersInCourse'].append(data['rfc'])
-                course.save()
-                return(jsonify({'message': 'Docente agregado con exito.'}), 200)
-
-@app.route('/rejectTeacherOfCourse/<name>', methods=['POST'])
-@jwt_required
-def rejectTeacherOfCourse_view(name):       # Ruta que elimina el RFC del docente rechazado del curso
-    if(request.method == 'POST'):
-        data = request.get_json()
-        try:
-            courseRequest = RequestCourse.objects.get(course=name)
-        except:
-            return jsonify({'message': 'Peticion invalida'}), 404
-        if(data['rfc'] in courseRequest['requests']):
-            courseRequest['requests'].remove(data['rfc'])
-            courseRequest.save()
-            if(len(courseRequest['requests'])==0):
-                courseRequest.delete()
-            try:
-                blacklist = BlacklistRequest.objects.get(course=name)
-                blacklist['requests'].append(data['rfc'])
-                blacklist.save()
-            except:
-                BlacklistRequest(
-                    course=name,
-                    requests=[data['rfc']]
-                ).save()
-            return(jsonify({'message': "Rechazado, asi como ella me rechazo a mi :'v"}), 201)
-        else:
-            return(jsonify({'message': 'RFC inexistente'}), 500)
-
-@app.route('/removeTeacherinCourse/<name>', methods=['POST'])
-@jwt_required
-def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso 
-    if(request.method == 'POST'):
-        data = request.get_json()
-        try:
-            course = Course.objects.get(courseName=name)
-        except Course.DoesNotExist:
-            return(jsonify({"message": "Curso inexistente"}), 401)
-        if(data['rfc'] in course['teachersInCourse']):
-            course['teachersInCourse'].remove(data['rfc'])
-            if not course['teachersInCourse']:
-                course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
-            course.save()
-            return(jsonify({"message": "Docente dado de baja exitosamente"}), 200)
-        else:
-            return(jsonify({"message": "No existe en la lista"}), 401)
 
 @app.route('/addInfo', methods=['GET', 'POST'])
 @jwt_required
