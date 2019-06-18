@@ -423,7 +423,7 @@ def requests_to(name):
             'name': "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
         })
     return jsonify(arrayToSend), 200
-    
+
 @app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
 @jwt_required
 def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente aceptado al curso seleccionado
@@ -584,7 +584,21 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
                 return(jsonify({'message': 'Curso no registrado.'}), 404)
         else:
             return(jsonify({'message': 'Curso inexistente.'}), 404)
-            
+
+@app.route('/establishLimitDaysOfPoll', methods=['PUT'])
+@jwt_required
+def establish_Limit_Days_Of_Poll():
+    if request.method == 'PUT':
+        data = request.get_json()
+        if len(data.items())>1:
+            return jsonify({'message': 'Pa que mandas mas keys? ggg salu2'}), 400
+        for (key, val) in data.items():
+            if val >= 0:
+                redis.set(key, val)
+            else:
+                return jsonify({'message': 'Pa que mandas un numero negativo? ggg salu2'}), 400
+        return jsonify({'message': 'Se ha establecido el limite de dias exitosamente'}), 200
+
 @app.route('/dataConcentrated', methods=['GET'])
 @jwt_required
 def data_con():                         # Ruta que regresa un PDF con los datos de los cursos concentrados
@@ -742,10 +756,7 @@ def addinfoView():                      # Only works to add meta data for each l
 @app.errorhandler(404)
 @jwt_required
 def page_not_found(error):
-    error = {
-        "errorType": "404",
-        "message": "Pagina no encontrada"
-    }
+    error = {"errorType": "404", "message": "Pagina no encontrada"}
     return(jsonify(error), 404)
 
 #  ==> --> In Develop <-- <==
