@@ -190,14 +190,14 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         return(jsonify({"message": "Don't exists"}), 404)
     if (request.method == 'GET'):################################################### Ya no moverle
         datos = courseSchema.dump(course)
-        limitDays = int(redis.get('days').decode('utf-8'))
+        limitDays = int(redis.get('days').decode('utf-8'))-1
         newDictToSend = datos[0]
         endDay = dt.strptime(datos[0]['dateEnd'].replace("T00:00:00+00:00", ""), "%Y-%m-%d")
         for key in ('teachersInCourse', 'id', 'serial'):
             del newDictToSend[key]
-        print(dt.now().date() <= endDay.date()+td(days=limitDays))
-        if newDictToSend['state'] == 'Terminado' and dt.now().date() <= endDay.date()+td(days=limitDays):
+        if newDictToSend['state'] == 'Terminado' and dt.now().date() < endDay.date()+td(days=limitDays):
             newDictToSend['allowPoll'] = True
+            newDictToSend['leftDays'] = (endDay.date()+td(days=limitDays)-dt.now().date()).days
         else:
             newDictToSend['allowPoll'] = False
         teacherWillteach = Teacher.objects.filter(rfc=course['teacherRFC']).values_list("name", "fstSurname", "sndSurname")
