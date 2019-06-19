@@ -159,7 +159,6 @@ def courses_by_period(period):
                     if course[0].month == listaQueContieneMesesAndYear[0] or course[0].month == listaQueContieneMesesAndYear[1]:
                         teacher = Teacher.objects.filter(rfc=course[2]).values_list('name', 'fstSurname', 'sndSurname')
                         coursesToSend.append([course[1], "{} {} {}".format(teacher[0][0], teacher[0][1], teacher[0][2]), course[3]])
-            print(months.index(periodDesglosado[0])+1, int(periodDesglosado[1]))
         return jsonify({'courses': coursesToSend})
 
 @app.route('/availableCourses', methods=['GET'])
@@ -190,7 +189,7 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         return(jsonify({"message": "Don't exists"}), 404)
     if (request.method == 'GET'):################################################### Ya no moverle
         datos = courseSchema.dump(course)
-        limitDays = int(redis.get('days').decode('utf-8'))-1
+        limitDays = int(redis.get('days').decode('utf-8'))
         newDictToSend = datos[0]
         endDay = dt.strptime(datos[0]['dateEnd'].replace("T00:00:00+00:00", ""), "%Y-%m-%d")
         for key in ('teachersInCourse', 'id', 'serial'):
@@ -621,7 +620,6 @@ def data_con():                         # Ruta que regresa un PDF con los datos 
         depName = []
         totaldepTeacherNum = 0
         depas = Teacher.objects.filter().values_list('departament')
-        print(depas)
         for val in depas:
             if val not in depName:
                 depName.append(val)
