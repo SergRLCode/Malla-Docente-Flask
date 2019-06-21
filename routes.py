@@ -389,14 +389,8 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
         teacher.save()
         return(jsonify({'message': 'Datos guardados.'}), 200)
     elif request.method == 'DELETE':
-        courses = Course.objects.filter(teachersInCourse__contains=teacher.rfc)
         requests = RequestCourse.objects.filter(requests__contains=teacher.rfc)
         blacklist = BlacklistRequest.objects.filter(requests__contains=teacher.rfc)
-        for course in courses:
-            course['teachersInCourse'].remove(rfc)
-            if not course['teachersInCourse']:
-                course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
-            course.save()
         for reqst in requests:
             reqst['requests'].remove(rfc)
             reqst.save()
