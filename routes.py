@@ -281,12 +281,18 @@ def edit_serial(course):            # Ruta para cambio de FOLIO
 @jwt_required
 def my_courses():                    # Regresa todos los cursos en los que se ha registrado el docente
     if(request.method == 'GET'):
-        courses = Course.objects.filter(teachersInCourse__contains=get_jwt_identity()[0]).values_list('courseName')
+        courses = Course.objects.filter(teachersInCourse__contains=get_jwt_identity()[0]).values_list('courseName', 'timetable', 'teacherRFC', 'state')
+        _mycourses = []
         if len(courses) > 0:
-            _mycourses = []
             for val in courses:
-                _mycourses.append(val)
-            return(jsonify({'message': _mycourses}), 200)
+                teacherName = Teacher.objects.filter(rfc=val[2]).values_list('name', 'fstSurname', 'sndSurname')
+                _mycourses.append({
+                    'courseName': val[0],
+                    'timetable': val[1],
+                    'teacherName': "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]),
+                    'state': val[3]
+                })
+            return(jsonify({'courses': _mycourses}), 200)
         else:
             return(jsonify({'message': 'No esta registrado en ningun curso'}), 404)
 
@@ -294,9 +300,14 @@ def my_courses():                    # Regresa todos los cursos en los que se ha
 @jwt_required
 def my_courses_will_teach():
     coursesWillTeach = []
-    courses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName', 'timetable', 'dateStart', 'dateEnd')
+    courses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName', 'timetable', 'dateStart', 'dateEnd', 'state')
     for course in courses:
-        coursesWillTeach.append({'courseName': course[0], 'timetable': course[1], 'duration': periodOfTime(course[2], course[3])})
+        coursesWillTeach.append({
+            'courseName': course[0], 
+            'timetable': course[1], 
+            'duration': periodOfTime(course[2], course[3]),
+            'state': course[4]
+        })
     return jsonify({'courses': coursesWillTeach}), 200
 
 @app.route('/teachers', methods=['GET', 'POST'])
@@ -389,8 +400,14 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
         teacher.save()
         return(jsonify({'message': 'Datos guardados.'}), 200)
     elif request.method == 'DELETE':
+        # courses = Course.objects.filter(teachersInCourse__contains=teacher.rfc)
         requests = RequestCourse.objects.filter(requests__contains=teacher.rfc)
         blacklist = BlacklistRequest.objects.filter(requests__contains=teacher.rfc)
+        # for course in courses:
+        #     course['teachersInCourse'].remove(rfc)
+        #     if not course['teachersInCourse']:
+        #         course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
+        #     course.save()
         for reqst in requests:
             reqst['requests'].remove(rfc)
             reqst.save()
