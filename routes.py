@@ -22,6 +22,8 @@ def check_if_token_in_blacklist(decrypted_token):           # Verifica que el to
     courses = Course.objects.all()
     for course in courses:
         hours = course['timetable'].split('-')
+        if course['dateStart'].date() > dt.now().date():
+            course['state'] = 'Por empezar'
         if course['dateStart'].date() <= dt.now().date():
             if dt.now().hour >= int(hours[0].replace(':00', "")):
                 course['state'] = 'Cursando'
@@ -167,9 +169,11 @@ def available_courses():            # Ruta que retorna una lista con los cursos 
     if(request.method=='GET'):
         availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC', 'timetable', 'teachersInCourse', 'state')
         coursesRequested = RequestCourse.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
+        coursesRejected = BlacklistRequest.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
+        myCourses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName')
         arrayToSend = []
         for vals in availableCourses:
-            if get_jwt_identity()[0] not in vals[3] and vals[0] not in coursesRequested:
+            if get_jwt_identity()[0] not in vals[3] and vals[0] not in coursesRequested and vals[0] not in coursesRejected and vals[0] not in myCourses:
                 teacherName = Teacher.objects.filter(rfc=vals[1]).values_list('name', 'fstSurname', 'sndSurname')
                 completeName = "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
                 arrayToSend.append({
@@ -178,7 +182,7 @@ def available_courses():            # Ruta que retorna una lista con los cursos 
                     'timetable': vals[2], 
                     'state': vals[4]
                 })
-        return(jsonify({'message': arrayToSend}), 200)
+        return(jsonify({'courses': arrayToSend}), 200)
 
 @app.route('/course/<name>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required
@@ -508,15 +512,24 @@ def rejectTeacherOfCourse_view(name):       # Ruta que elimina el RFC del docent
         else:
             return(jsonify({'message': 'RFC inexistente'}), 500)
 
-@app.route('/removeTeacherinCourse/<name>', methods=['POST'])
+@app.route('/removeTeacherinCourse/<name>', methods=['GET', 'POST'])
 @jwt_required
 def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso 
-    if(request.method == 'POST'):
+    try:
+        course = Course.objects.get(courseName=name)
+    except Course.DoesNotExist:
+        return(jsonify({"message": "Curso inexistente"}), 401)
+    if (request.method == 'GET'):
+        if(get_jwt_identity()[0] in course['teachersInCourse']):
+            course['teachersInCourse'].remove(data['rfc'])
+            if not course['teachersInCourse']:
+                course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
+                course.save()
+                return(jsonify({"message": "Docente dado de baja exitosamente"}), 200)
+            else:
+                return(jsonify({"message": "No existe en la lista"}), 401)
+    elif(request.method == 'POST'):
         data = request.get_json()
-        try:
-            course = Course.objects.get(courseName=name)
-        except Course.DoesNotExist:
-            return(jsonify({"message": "Curso inexistente"}), 401)
         if(data['rfc'] in course['teachersInCourse']):
             course['teachersInCourse'].remove(data['rfc'])
             if not course['teachersInCourse']:
