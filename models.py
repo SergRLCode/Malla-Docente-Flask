@@ -66,9 +66,13 @@ class RequestCourse(db.Document):
     course = db.StringField()
     requests = db.ListField(db.StringField())
 
-class Departament(db.Document):
-    name = db.StringField()
-    boss = db.StringField()
+class BlacklistRequest(db.Document):
+    course = db.StringField()
+    requests = db.ListField(db.StringField())
+
+class Approved(db.Document):
+    course = db.StringField()
+    teachers = db.ListField(db.StringField())
 
 class LetterheadMetaData(db.Document):
     nameDocument = db.StringField()
@@ -79,10 +83,6 @@ class LetterheadMetaData(db.Document):
 class BlacklistJWT(db.Document):
     jwt = db.StringField(unique = True)
     identity = db.StringField()
-
-class BlacklistRequest(db.Document):
-    course = db.StringField()
-    requests = db.ListField(db.StringField())
 
 # python3, reserved word "dir", pa ver metodos
 

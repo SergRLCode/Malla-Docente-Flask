@@ -1,5 +1,5 @@
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
-from models import Course, Teacher, LetterheadMetaData, Departament, BlacklistJWT, RequestCourse, BlacklistRequest
+from models import Course, Teacher, LetterheadMetaData, Approved, BlacklistJWT, RequestCourse, BlacklistRequest
 from pdfs import assistantList, coursesList, inscription, pollDocument, concentrated
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
@@ -524,10 +524,10 @@ def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso
             course['teachersInCourse'].remove(data['rfc'])
             if not course['teachersInCourse']:
                 course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
-                course.save()
-                return(jsonify({"message": "Docente dado de baja exitosamente"}), 200)
-            else:
-                return(jsonify({"message": "No existe en la lista"}), 401)
+            course.save()
+            return(jsonify({"message": "Docente dado de baja exitosamente"}), 200)
+        else:
+            return(jsonify({"message": "No existe en la lista"}), 401)
     elif(request.method == 'POST'):
         data = request.get_json()
         if(data['rfc'] in course['teachersInCourse']):
@@ -540,24 +540,31 @@ def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso
             return(jsonify({"message": "No existe en la lista"}), 401)
 
 @app.route('/courses/coursesList', methods=['GET'])
-@jwt_required
+# @jwt_required
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 
+    actualMonth = dt.now().month
+    actualYear = dt.now().year
     all_courses = Course.objects.all()
     if len(all_courses)!=0:
         courses = []
         months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
         for course in all_courses:
             teacherName = Teacher.objects.filter(rfc=course["teacherRFC"]).values_list("name", "fstSurname", "sndSurname")
-            courses.append([
-                course["courseName"],
-                course["description"],
-                course["dateStart"],
-                course["dateEnd"],
-                course["place"],
-                "{} hrs.".format(course["totalHours"]),
-                "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]),
-                course["courseTo"]
-            ])
+            if course['dateStart'].year == actualYear:
+                if course['dateStart'].month == actualMonth == 7 or course['dateStart'].month == actualMonth == 8:
+                    courses.append([
+                        course["courseName"], course["description"], course["dateStart"], course["dateEnd"], course["place"],
+                        "{} hrs.".format(course["totalHours"]),
+                        "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]),
+                        course["courseTo"]
+                    ])
+                elif course['dateStart'].month == actualMonth:
+                    courses.append([
+                        course["courseName"], course["description"], course["dateStart"], course["dateEnd"], course["place"],
+                        "{} hrs.".format(course["totalHours"]),
+                        "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2]),
+                        course["courseTo"]
+                    ])
         return(coursesList(courses), 200)
     else:
         return(jsonify({'message': 'Sin cursos'}), 404)

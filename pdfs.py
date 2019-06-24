@@ -185,8 +185,16 @@ def assistantList(teachers, courseTeacher, course):
     
 def coursesList(courses):
     getMetaData("5cb0b321ab661b1fea0178be")
+    actualMonth = datetime.now().month
+    actualYear = datetime.now().year
+    if months[actualMonth-1]=="Julio":
+        period = "{} {}".format("{}-{}".format(months[actualMonth-1], months[actualMonth]), actualYear)
+    elif months[actualMonth-1]=="Agosto":
+        period = "{} {}".format("{}-{}".format(months[actualMonth-2], months[actualMonth-1]), actualYear)
+    else:
+        period = "{} {}".format(months[actualMonth-1], actualYear)
     tableTitleList = [
-        [set_H2("PERIODO JUNIO - AGOSTO 2018")]
+        [set_H2("PERIODO {}".format(period))]
     ]
     tableCoursesList = [
         ['No.', set_N('Nombre de los cursos'), 'Objetivo', set_N('Periodo de Realizacion'), 'Lugar', set_N('No. de horas x Curso'), 'Instructor', 'Dirigido a:', 'Observaciones']
