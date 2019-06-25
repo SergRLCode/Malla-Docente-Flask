@@ -227,6 +227,23 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         course.delete()
         return(jsonify({"message": advice}), 200)
 
+@app.route('/teacherList/<course>', methods=['GET'])
+@jwt_required
+def teacher_list(course):
+    if request.method == 'GET':
+        try:
+            course = Course.objects.get(courseName=course)
+        except:
+            return jsonify({'message': "Don't exists"}), 404
+        teacherList = []
+        for val in course['teachersInCourse']:
+            teacherData = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
+            teacherList.append({
+                'rfc': val,
+                'name': "{} {} {}".format(teacherData[0][0], teacherData[0][1], teacherData[0][2])
+            })
+        return jsonify({'teachers': teacherList}), 200
+
 @app.route('/courseRequest/<name>', methods=['GET'])
 @jwt_required
 def course_request(name):           # Ruta en la cual el docente agrega su RFC para peticion de tomar un curso
@@ -463,7 +480,7 @@ def addTeacherinCourse_view(course_name):       # Ruta para agregar al docente a
             return(jsonify({"message": "Curso inexistente"}), 404)
         all_rfc = Teacher.objects.filter(rfc__ne=course['teacherRFC']).values_list('rfc')   # Obtiene todos los RFC de los docentes excepto el docente que imparte el curso
         if(data['rfc'] not in all_rfc): # Verifica que exista el RFC                                   
-            return(jsonify({'message': 'RFC invalido.'}), 401)
+            return(jsonify({'message': 'Pa empezar ni existe xd.'}), 401)
         else:   # En caso de que SI exista...
             if(data['rfc'] in course['teachersInCourse']):  # Verifica que el docente ya esta en la lista
                 return(jsonify({"message": "Docente agregado previamente."}), 200)
@@ -538,6 +555,29 @@ def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso
             return(jsonify({"message": "Docente dado de baja exitosamente"}), 200)
         else:
             return(jsonify({"message": "No existe en la lista"}), 401)
+
+@app.route('/approvedCourse/<name>', methods=['GET', 'PUT'])
+@jwt_required
+def teacherApprovedCourse(name):
+    if(request.method == 'GET'):
+        courseAp = Approved.objects.get(course=name)
+        return jsonify({'approved': courseAp['teachers']})
+    elif(request.method == 'PUT'):
+        data = request.get_json()
+        try:
+            course = Course.objects.get(courseName=name)
+        except:
+            return jsonify({'message': "Don't exists"}), 400
+        try:
+            approved = Approved.objects.get(course=course['courseName'])
+            approved['teachers'].append(data['rfc'])
+            approved.save()
+        except:
+            Approved(
+                course=course['courseName'],
+                teachers=[data['rfc']]
+            ).save()
+        return jsonify({'message': 'Success!'}), 200
 
 @app.route('/courses/coursesList', methods=['GET'])
 # @jwt_required

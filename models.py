@@ -81,7 +81,7 @@ class LetterheadMetaData(db.Document):
     emitDate = db.DateTimeField()
 
 class BlacklistJWT(db.Document):
-    jwt = db.StringField(unique = True)
+    jwt = db.StringField(unique=True)
     identity = db.StringField()
 
 # python3, reserved word "dir", pa ver metodos
