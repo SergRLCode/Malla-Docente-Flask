@@ -198,9 +198,12 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         endDay = dt.strptime(datos[0]['dateEnd'].replace("T00:00:00+00:00", ""), "%Y-%m-%d")
         for key in ('teachersInCourse', 'id', 'serial'):
             del newDictToSend[key]
+        keyOfRedis = name.replace(" ", "_").lower()
+        listRedisLen = redis.llen(keyOfRedis)
         if newDictToSend['state'] == 'Terminado' and dt.now().date() < endDay.date()+td(days=limitDays):
             newDictToSend['allowPoll'] = True
             newDictToSend['leftDays'] = (endDay.date()+td(days=limitDays)-dt.now().date()).days
+            newDictToSend['teachersThatHaveDoneThePoll'] = [val.decode('utf-8') for val in redis.lrange(keyOfRedis, 0, listRedisLen)]
         else:
             newDictToSend['allowPoll'] = False
         teacherWillteach = Teacher.objects.filter(rfc=course['teacherRFC']).values_list("name", "fstSurname", "sndSurname")
@@ -580,7 +583,7 @@ def teacherApprovedCourse(name):
         return jsonify({'message': 'Success!'}), 200
 
 @app.route('/courses/coursesList', methods=['GET'])
-# @jwt_required
+@jwt_required
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 
     actualMonth = dt.now().month
     actualYear = dt.now().year
@@ -660,9 +663,13 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
         courseData = Course.objects.filter(courseName=name).values_list('courseName', 'teacherRFC', 'place', 'dateStart', 'dateEnd', 'totalHours', 'timetable', 'teachersInCourse')
         if len(courseData)!=0:
             if get_jwt_identity()[0] in courseData[0][7]:
+                data = request.get_json()
                 teacherThatTeach = Teacher.objects.filter(rfc=courseData[0][1]).values_list('name', 'fstSurname', 'sndSurname')
                 departament = Teacher.objects.filter(rfc=get_jwt_identity()[0]).values_list('departament')
-                data = request.get_json()
+                keyOfRedis = name.replace(" ", "_").lower()
+                listRedisLen = redis.llen(keyOfRedis)
+                listRedis = [val.decode('utf-8') for val in redis.lrange(keyOfRedis, 0, listRedisLen)]
+                redis.lpush(keyOfRedis, get_jwt_identity()[0])
                 return(pollDocument(data, courseData, teacherThatTeach, departament[0]), 200)
             else:
                 return(jsonify({'message': 'Curso no registrado.'}), 404)
@@ -835,6 +842,12 @@ def addinfoView():                      # Only works to add meta data for each l
             emitDate = data['emitDate']
         ).save()
         return(jsonify({"message": "Added"}), 200)
+
+# @app.route('/metadata/<doc>', methods=['GET','PUT'])
+# @jwt_required
+# def metadata_u(doc):
+#     if(request.method=='GET'):
+#         info = LetterheadMetaData.objects.get()
 
 @app.errorhandler(404)
 @jwt_required
