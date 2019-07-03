@@ -827,12 +827,24 @@ def data_con():                         # Ruta que regresa un PDF con los datos 
         totalCourses = [len(numOfCD), len(numOfAP)]
         return(concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados, depPercentYesCoursed, noCapacitados, depPercentNoCoursed, totalCourses), 200)
 
-@app.route('/addInfo', methods=['GET', 'POST'])
+shortTitles = [
+    {'id': '5cb0b321ab661b1fea0178be', 'name': 'Lista de cursos'},
+    {'id': '5cb0c0beab661b261edfea32', 'name': 'Lista de asistencia'},
+    {'id': '5cb0c16bab661b27708563a7', 'name': 'Cédula de inscripción'},
+    {'id': '5cb0c19dab661b27708563a8', 'name': 'Encuesta'}
+]
+
+@app.route('/metadata', methods=['GET', 'POST'])
 @jwt_required
-def addinfoView():                      # Only works to add meta data for each letterhead, next change will update meta data
+def metadata_route():                      # Only works to add meta data for each letterhead, next change will update meta data
     if(request.method == 'GET'):
         info = LetterheadMetaData.objects.all()
-        return jsonify(info)
+        data = letterheadSchemas.dump(info)
+        for val in data[0]:
+            for _val in shortTitles:
+                if val['id'] == _val['id']:
+                    val['shortName'] = _val['name']
+        return jsonify(data[0])
     elif(request.method == 'POST'):
         data = request.get_json()
         LetterheadMetaData(
@@ -843,11 +855,25 @@ def addinfoView():                      # Only works to add meta data for each l
         ).save()
         return(jsonify({"message": "Added"}), 200)
 
-# @app.route('/metadata/<doc>', methods=['GET','PUT'])
-# @jwt_required
-# def metadata_u(doc):
-#     if(request.method=='GET'):
-#         info = LetterheadMetaData.objects.get()
+@app.route('/metadata/<doc>', methods=['GET','PUT'])
+@jwt_required
+def metadata_u(doc):
+    _data = {}
+    for val in shortTitles:
+        if doc == val['name']:
+            _data = val
+    info = LetterheadMetaData.objects.get(id=_data['id'])
+    if(request.method=='GET'):
+        data = letterheadSchema.dump(info)
+        data[0]['shortName'] = _data['name']
+        return jsonify(data[0])
+    if request.method=='PUT':
+        attributes = ('nameDocument', 'typeDocument', 'version', 'emitDate')
+        data = request.get_json()
+        for val in attributes:
+            info[val] = data[val]
+        info.save()
+        return jsonify({'message': 'Datos guardados!.'})
 
 @app.errorhandler(404)
 @jwt_required

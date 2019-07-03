@@ -32,6 +32,7 @@ teacherSchema = TeacherSchema()
 teacherSchemas = TeacherSchema(many=True)
 
 letterheadSchema = LetterheadSchema()
+letterheadSchemas = LetterheadSchema(many=True)
 
 approvedSchema = ApprovedSchema()
 
