@@ -240,8 +240,16 @@ def teacher_list(course):
             return jsonify({'message': "Don't exists"}), 404
         teacherList = []
         qualified = Qualified.objects.filter(course=course['courseName']).values_list('approved', 'failed')
-        for val in course['teachersInCourse']:
-            if val not in qualified[0][0] and val not in qualified[0][1]:
+        if(len(qualified)!=0):
+            for val in course['teachersInCourse']:
+                if val not in qualified[0][0] and val not in qualified[0][1]:
+                    teacherData = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
+                    teacherList.append({
+                        'rfc': val,
+                        'name': "{} {} {}".format(teacherData[0][0], teacherData[0][1], teacherData[0][2])
+                    })
+        else:
+            for val in course['teachersInCourse']:
                 teacherData = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
                 teacherList.append({
                     'rfc': val,
