@@ -1,5 +1,5 @@
 from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
-from models import Course, Teacher, LetterheadMetaData, Approved, BlacklistJWT, RequestCourse, BlacklistRequest
+from models import Course, Teacher, LetterheadMetaData, Qualified, BlacklistJWT, RequestCourse, BlacklistRequest
 from pdfs import assistantList, coursesList, inscription, pollDocument, concentrated
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
@@ -230,7 +230,7 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         course.delete()
         return(jsonify({"message": advice}), 200)
 
-@app.route('/teacherList/<course>', methods=['GET'])
+@app.route('/teacherListToQualify/<course>', methods=['GET'])
 @jwt_required
 def teacher_list(course):
     if request.method == 'GET':
@@ -239,12 +239,14 @@ def teacher_list(course):
         except:
             return jsonify({'message': "Don't exists"}), 404
         teacherList = []
+        qualified = Qualified.objects.filter(course=course['courseName']).values_list('approved', 'failed')
         for val in course['teachersInCourse']:
-            teacherData = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
-            teacherList.append({
-                'rfc': val,
-                'name': "{} {} {}".format(teacherData[0][0], teacherData[0][1], teacherData[0][2])
-            })
+            if val not in qualified[0][0] and val not in qualified[0][1]:
+                teacherData = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
+                teacherList.append({
+                    'rfc': val,
+                    'name': "{} {} {}".format(teacherData[0][0], teacherData[0][1], teacherData[0][2])
+                })
         return jsonify({'teachers': teacherList}), 200
 
 @app.route('/courseRequest/<name>', methods=['GET'])
@@ -563,8 +565,11 @@ def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso
 @jwt_required
 def teacherApprovedCourse(name):
     if(request.method == 'GET'):
-        courseAp = Approved.objects.get(course=name)
-        return jsonify({'approved': courseAp['teachers']})
+        try:
+            qualified = Qualified.objects.get(course=name)
+            return jsonify({'approved': qualified['approved']})
+        except:
+            return(jsonify({"message": "No hay aprobados aun"}), 404)
     elif(request.method == 'PUT'):
         data = request.get_json()
         try:
@@ -572,14 +577,50 @@ def teacherApprovedCourse(name):
         except:
             return jsonify({'message': "Don't exists"}), 400
         try:
-            approved = Approved.objects.get(course=course['courseName'])
-            approved['teachers'].append(data['rfc'])
-            approved.save()
+            qualified = Qualified.objects.get(course=course['courseName'])
+            if data['rfc'] in course['teachersInCourse']:
+                qualified['approved'].append(data['rfc'])
+                qualified.save()
+            else:
+                return jsonify({"message": "Docente no registrado"}), 404
         except:
-            Approved(
-                course=course['courseName'],
-                teachers=[data['rfc']]
-            ).save()
+            if data['rfc'] in course['teachersInCourse']:
+                Qualified(
+                    course=course['courseName'], approved=[data['rfc']], failed=[]
+                ).save()
+            else:
+                return jsonify({"message": "Docente no registrado"}), 404
+        return jsonify({'message': 'Success!'}), 200
+
+@app.route('/failedCourse/<name>', methods=['GET', 'PUT'])
+@jwt_required
+def teacherFailedCourse(name):
+    if(request.method == 'GET'):
+        try:
+            qualified = Qualified.objects.get(course=name)
+            return jsonify({'failed': qualified['failed']})
+        except:
+            return jsonify({"message": "No hay reprobados aun"}), 404
+    elif(request.method == 'PUT'):
+        data = request.get_json()
+        try:
+            course = Course.objects.get(courseName=name)
+        except:
+            return jsonify({'message': "Don't exists"}), 400
+        try:
+            qualified = Qualified.objects.get(course=course['courseName'])
+            if data['rfc'] in course['teachersInCourse']:            
+                qualified['failed'].append(data['rfc'])
+                qualified.save()
+            else:
+                return jsonify({"message": "Docente no registrado"}), 404
+        except:
+            if data['rfc'] in course['teachersInCourse']:
+                Qualified(
+                    course=course['courseName'], approved=[], failed=[data['rfc']]
+                ).save()
+            else:
+                return jsonify({"message": "Docente no registrado"}), 404
         return jsonify({'message': 'Success!'}), 200
 
 @app.route('/courses/coursesList', methods=['GET'])
@@ -594,7 +635,7 @@ def coursesList_view():             # Ruta que regresa el documento PDF con list
         for course in all_courses:
             teacherName = Teacher.objects.filter(rfc=course["teacherRFC"]).values_list("name", "fstSurname", "sndSurname")
             if course['dateStart'].year == actualYear:
-                if course['dateStart'].month == actualMonth == 7 or course['dateStart'].month == actualMonth == 8:
+                if course['dateStart'].month == 7 or course['dateStart'].month == 8 and (actualMonth == 7 or actualMonth == 8):
                     courses.append([
                         course["courseName"], course["description"], course["dateStart"], course["dateEnd"], course["place"],
                         "{} hrs.".format(course["totalHours"]),

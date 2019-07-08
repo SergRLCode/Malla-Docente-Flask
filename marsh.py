@@ -1,6 +1,6 @@
 from marshmallow_mongoengine import ModelSchema
 from flask_marshmallow import Marshmallow
-from models import Course, Teacher, LetterheadMetaData, Approved, BlacklistJWT
+from models import Course, Teacher, LetterheadMetaData, Qualified, BlacklistJWT
 from app import app
 
 marsh = Marshmallow(app)
@@ -17,9 +17,9 @@ class LetterheadSchema(ModelSchema):
     class Meta:
         model = LetterheadMetaData
 
-class ApprovedSchema(ModelSchema):
+class QualifiedSchema(ModelSchema):
     class Meta:
-        model = Approved
+        model = Qualified
 
 class BlacklistJWTSchema(ModelSchema):
     class Meta:
@@ -34,7 +34,7 @@ teacherSchemas = TeacherSchema(many=True)
 letterheadSchema = LetterheadSchema()
 letterheadSchemas = LetterheadSchema(many=True)
 
-approvedSchema = ApprovedSchema()
+qualifiedSchema = QualifiedSchema()
 
 blacklistJWTSchema = BlacklistJWTSchema()
 

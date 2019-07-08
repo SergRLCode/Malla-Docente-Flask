@@ -70,9 +70,10 @@ class BlacklistRequest(db.Document):
     course = db.StringField()
     requests = db.ListField(db.StringField())
 
-class Approved(db.Document):
+class Qualified(db.Document):
     course = db.StringField()
-    teachers = db.ListField(db.StringField())
+    approved = db.ListField(db.StringField())
+    failed = db.ListField(db.StringField())
 
 class LetterheadMetaData(db.Document):
     nameDocument = db.StringField()
