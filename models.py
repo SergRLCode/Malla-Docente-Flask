@@ -85,9 +85,6 @@ class BlacklistJWT(db.Document):
     jwt = db.StringField(unique=True)
     identity = db.StringField()
 
-# python3, reserved word "dir", pa ver metodos
-# Docente, Administrador, Comunicacion, Jefe de departamento
-
 # mongodump --db Capacitacion               -- para exportar la DB
 # mongorestore -d Capacitacion course.bson  -- para importar la DB
 # mongorestore -d DB_name -c Collection_name db_backup.bson -- para importar una coleccion especifica de la DB

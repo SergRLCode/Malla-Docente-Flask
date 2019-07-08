@@ -232,7 +232,7 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
 
 @app.route('/teacherListToQualify/<course>', methods=['GET'])
 @jwt_required
-def teacher_list(course):
+def teacher_list_to_qualify(course):
     if request.method == 'GET':
         try:
             course = Course.objects.get(courseName=course)
@@ -255,6 +255,23 @@ def teacher_list(course):
                     'rfc': val,
                     'name': "{} {} {}".format(teacherData[0][0], teacherData[0][1], teacherData[0][2])
                 })
+        return jsonify({'teachers': teacherList}), 200
+
+@app.route('/teacherList/<course>', methods=['GET'])
+@jwt_required
+def teacher_list(course):
+    if request.method == 'GET':
+        try:
+            course = Course.objects.get(courseName=course)
+        except:
+            return jsonify({'message': "Don't exists"}), 404
+        teacherList = []
+        for val in course['teachersInCourse']:
+            teacherData = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
+            teacherList.append({
+                'rfc': val,
+                'name': "{} {} {}".format(teacherData[0][0], teacherData[0][1], teacherData[0][2])
+            })
         return jsonify({'teachers': teacherList}), 200
 
 @app.route('/courseRequest/<name>', methods=['GET'])
