@@ -378,30 +378,26 @@ def teachers():                     # Ruta para agregar un docente o consultar t
             data['studyLevel'] = data['otherStudyLevel']
         if data['internal'] != False:
             try:
-                departament = Departament.objects.get(name=data['departament'])
-                try:
-                    Teacher(
-                        rfc = data["rfc"],
-                        name = data["name"],
-                        fstSurname = data["fstSurname"],
-                        sndSurname = data["sndSurname"],
-                        numberPhone = data["numberPhone"],
-                        email = data["email"],
-                        internal = data["internal"],
-                        studyLevel = data["studyLevel"],
-                        degree = data["degree"],
-                        speciality = data["speciality"],
-                        departament = data["departament"],
-                        schedule = data["schedule"],
-                        position = data["position"],
-                        userType = data["userType"],
-                        pin = sha256.hash(data["pin"])
-                    ).save()
-                except:
-                    return(jsonify({'message': 'Error, verifique bien la informacion'}), 401)
-                return(jsonify({'message': 'Docente agregado'}), 200)
+                Teacher(
+                    rfc = data["rfc"],
+                    name = data["name"],
+                    fstSurname = data["fstSurname"],
+                    sndSurname = data["sndSurname"],
+                    numberPhone = data["numberPhone"],
+                    email = data["email"],
+                    internal = data["internal"],
+                    studyLevel = data["studyLevel"],
+                    degree = data["degree"],
+                    speciality = data["speciality"],
+                    departament = data["departament"],
+                    schedule = data["schedule"],
+                    position = data["position"],
+                    userType = data["userType"],
+                    pin = sha256.hash(data["pin"])
+                ).save()
             except:
-                return(jsonify({'message': 'Departamento invalido'}), 404)
+                return(jsonify({'message': 'Error, verifique bien la informacion'}), 401)
+            return(jsonify({'message': 'Docente agregado'}), 200)
         else:
             try:
                 Teacher(
