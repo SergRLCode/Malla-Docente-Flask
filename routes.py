@@ -196,7 +196,7 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         limitDays = int(redis.get('days').decode('utf-8'))
         newDictToSend = datos[0]
         endDay = dt.strptime(datos[0]['dateEnd'].replace("T00:00:00+00:00", ""), "%Y-%m-%d")
-        for key in ('teachersInCourse', 'id', 'serial'):
+        for key in ('teachersInCourse', 'id'):
             del newDictToSend[key]
         keyOfRedis = name.replace(" ", "_").lower()
         listRedisLen = redis.llen(keyOfRedis)
