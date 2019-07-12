@@ -470,6 +470,7 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
         return(jsonify({"message": advice}), 200)
 
 @app.route('/teachersByDep/<name>', methods=['GET'])
+@jwt_required
 def teachersByDep(name):
     if request.method == 'GET':
         teacherList = []
