@@ -469,18 +469,46 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
         teacher.delete()
         return(jsonify({"message": advice}), 200)
 
-@app.route('/teachersByDep/<name>', methods=['GET'])
+@app.route('/teachersByDep/<course>', methods=['GET'])
 @jwt_required
-def teachersByDep(name):
+def teachersByDep(course):
     if request.method == 'GET':
         teacherList = []
-        teachersData = Teacher.objects.filter(departament=name).values_list('rfc', 'name', 'fstSurname', 'sndSurname')
-        for val in teachersData:
-            teacherList.append({
-                'rfc': val[0],
-                'name': "{} {} {}".format(val[1], val[2], val[3])
-            })
+        department = Teacher.objects.filter(rfc=get_jwt_identity()[0]).values_list('departament')
+        teachersData = Teacher.objects.filter(departament=department[0]).values_list('rfc', 'name', 'fstSurname', 'sndSurname')
+        _course = Course.objects.filter(courseName=course).values_list('teacherRFC','teachersInCourse')
+        _requestCourse = RequestCourse.objects.filter(course=course).values_list('requests')
+        _blacklistRequest = BlacklistRequest.objects.filter(course=course).values_list('requests')
+        if len(_requestCourse)==0 and len(_blacklistRequest)==0:
+            for val in teachersData:
+                if val[0] != _course[0][0] and val[0] not in _course[0][1]:
+                    teacherList.append({
+                        'rfc': val[0],
+                        'name': "{} {} {}".format(val[1], val[2], val[3])
+                    })
+        elif len(_requestCourse)>0 and len(_blacklistRequest)==0:
+            for val in teachersData:
+                if val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _requestCourse[0]:
+                    teacherList.append({
+                        'rfc': val[0],
+                        'name': "{} {} {}".format(val[1], val[2], val[3])
+                    })
+        elif len(_requestCourse)==0 and len(_blacklistRequest)>0:
+            for val in teachersData:
+                if val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _blacklistRequest[0]:
+                    teacherList.append({
+                        'rfc': val[0],
+                        'name': "{} {} {}".format(val[1], val[2], val[3])
+                    })
+        else:
+            for val in teachersData:
+                if val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _requestCourse[0] and val[0] not in _blacklistRequest[0]:
+                    teacherList.append({
+                        'rfc': val[0],
+                        'name': "{} {} {}".format(val[1], val[2], val[3])
+                    })
         return jsonify({'teachers': teacherList}), 200
+        
 
 @app.route('/changePassword', methods=['POST'])
 @jwt_required
