@@ -469,6 +469,18 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
         teacher.delete()
         return(jsonify({"message": advice}), 200)
 
+@app.route('/teachersByDep/<name>', methods=['GET'])
+def teachersByDep(name):
+    if request.method == 'GET':
+        teacherList = []
+        teachersData = Teacher.objects.filter(departament=name).values_list('rfc', 'name', 'fstSurname', 'sndSurname')
+        for val in teachersData:
+            teacherList.append({
+                'rfc': val[0],
+                'name': "{} {} {}".format(val[1], val[2], val[3])
+            })
+        return jsonify({'teachers': teacherList}), 200
+
 @app.route('/changePassword', methods=['POST'])
 @jwt_required
 def change_password():          # No es necesario mencionar para que es, con el puro nombre de la funcion se ve
