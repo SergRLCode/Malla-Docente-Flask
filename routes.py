@@ -313,6 +313,7 @@ def course_request(name):           # Ruta en la cual el docente agrega su RFC p
                     ).save()
                     return(jsonify({'message': 'Solicitud enviada!'}), 200)
     if request.method == 'POST':
+        data = request.get_json()
         try:
             courseInRequest = RequestCourse.objects.get(course=name)
             courseInRequest["requests"].append(data['rfc'])
