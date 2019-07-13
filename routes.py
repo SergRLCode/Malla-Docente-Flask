@@ -482,62 +482,44 @@ def teachersByDep(course):
     if request.method == 'GET':
         teacherList = []
         department = Teacher.objects.filter(rfc=get_jwt_identity()[0]).values_list('departament')
-        teachersData = Teacher.objects.filter(departament=department[0]).values_list('rfc', 'name', 'fstSurname', 'sndSurname')
+        teachersData = Teacher.objects.filter(departament=department[0]).values_list('rfc', 'name', 'fstSurname', 'sndSurname', 'userType')
         _course = Course.objects.filter(courseName=course).values_list('teacherRFC','teachersInCourse')
-        _requestCourse = RequestCourse.objects.filter(course=course).values_list('requests')
-        _blacklistRequest = BlacklistRequest.objects.filter(course=course).values_list('requests')
-        if len(_requestCourse)==0 and len(_blacklistRequest)==0:
+        try:
+            _requestCourse = RequestCourse.objects.get(course=course)
+            _blacklistRequest = BlacklistRequest.objects.get(course=course)
+        except RequestCourse.DoesNotExist:
+            try:
+                _blacklistRequest = BlacklistRequest.objects.get(course=course)
+            except BlacklistRequest.DoesNotExist:
+                for val in teachersData:
+                    if val[4] != 'Jefe de departamento' and val[0] != _course[0][0] and val[0] not in _course[0][1]:
+                        teacherList.append({
+                            'rfc': val[0],
+                            'name': "{} {} {}".format(val[1], val[2], val[3])
+                        })
+            else:
+                for val in teachersData:
+                    if val[4] != 'Jefe de departamento' and val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _blacklistRequest['requests']:
+                        teacherList.append({
+                            'rfc': val[0],
+                            'name': "{} {} {}".format(val[1], val[2], val[3])
+                        })
+        except BlacklistRequest.DoesNotExist:
             for val in teachersData:
-                if val[0] != _course[0][0] and val[0] not in _course[0][1]:
-                    teacherList.append({
-                        'rfc': val[0],
-                        'name': "{} {} {}".format(val[1], val[2], val[3])
-                    })
-        elif len(_requestCourse)>0 and len(_blacklistRequest)==0:
-            for val in teachersData:
-                if val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _requestCourse[0]:
-                    teacherList.append({
-                        'rfc': val[0],
-                        'name': "{} {} {}".format(val[1], val[2], val[3])
-                    })
-        elif len(_requestCourse)==0 and len(_blacklistRequest)>0:
-            for val in teachersData:
-                if val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _blacklistRequest[0]:
+                if val[4] != 'Jefe de departamento' and val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _requestCourse['requests']:
                     teacherList.append({
                         'rfc': val[0],
                         'name': "{} {} {}".format(val[1], val[2], val[3])
                     })
         else:
             for val in teachersData:
-                if val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _requestCourse[0] and val[0] not in _blacklistRequest[0]:
+                if val[4] != 'Jefe de departamento' and val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _requestCourse['requests'] and val[0] not in _blacklistRequest['requests']:
                     teacherList.append({
                         'rfc': val[0],
                         'name': "{} {} {}".format(val[1], val[2], val[3])
                     })
-        return jsonify({'teachers': teacherList}), 200
-    # if request.method == 'GET':
-    #     teacherList = []
-    #     department = Teacher.objects.filter(rfc=get_jwt_identity()[0]).values_list('departament')
-    #     teachersData = Teacher.objects.filter(departament=department[0]).values_list('rfc', 'name', 'fstSurname', 'sndSurname', 'userType')
-    #     _course = Course.objects.filter(courseName=course).values_list('teacherRFC','teachersInCourse')
-    #     try:
-    #         _requestCourse = RequestCourse.objects.get(course=course)
-    #         _blacklistRequest = BlacklistRequest.objects.get(course=course)
-    #     except RequestCourse.DoesNotExist:
-    #         for val in teachersData:
-    #             if val[0] != _course[0][0] or val[0] not in _course[0][1]:
-    #                 teacherList.append({
-    #                     'rfc': val[0],
-    #                     'name': "{} {} {}".format(val[1], val[2], val[3])
-    #                 })
-    #     else:
-    #         for val in teachersData:
-    #             if val[4] != 'Jefe de departamento' or val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _requestCourse['requests'] and val[0] not in _blacklistRequest['requests']:
-    #                 teacherList.append({
-    #                     'rfc': val[0],
-    #                     'name': "{} {} {}".format(val[1], val[2], val[3])
-    #                 })
-    #     return jsonify({'teachers': teacherList}), 200
+        finally:
+            return jsonify({'teachers': teacherList}), 200
 
 @app.route('/changePassword', methods=['POST'])
 @jwt_required
