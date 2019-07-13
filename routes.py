@@ -321,7 +321,7 @@ def course_request(name):           # Ruta en la cual el docente agrega su RFC p
         except:
             RequestCourse(
                 course = name,
-                requests = data['rfc']
+                requests = [data['rfc']]
             ).save()
         return(jsonify({'message': 'Solicitud enviada!'}), 200)
 
