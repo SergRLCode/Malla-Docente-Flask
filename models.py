@@ -42,6 +42,15 @@ class Teacher(db.Document):
         ('Comunicación', 'Comunicación'),
         ('Jefe de departamento', 'Jefe de departamento'),
     )
+    department_choice = (
+        ('Sistemas y Computación', 'Sistemas y Computación'), 
+        ('Ingenierías', 'Ingenierías'), 
+        ('Ciencias Básicas', 'Ciencias Básicas'), 
+        ('Económico-Administrativo', 'Económico-Administrativo'), 
+        ('Ingeniería Industrial', 'Ingeniería Industrial'), 
+        ('Desarrollo Académico', 'Desarrollo Académico'), 
+        ('', '')
+    )
     # Personal Data
     rfc = db.StringField(max_length=13, required=True, unique=True)
     name = db.StringField()
