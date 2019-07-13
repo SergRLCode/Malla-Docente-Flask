@@ -274,49 +274,55 @@ def teacher_list(course):
             })
         return jsonify({'teachers': teacherList}), 200
 
-@app.route('/courseRequest/<name>', methods=['GET'])
+@app.route('/courseRequest/<name>', methods=['GET', 'POST'])
 @jwt_required
 def course_request(name):           # Ruta en la cual el docente agrega su RFC para peticion de tomar un curso
-    course = Course.objects.filter(courseName=name).values_list('timetable', 'dateStart', 'dateEnd', 'courseName', 'teacherRFC')
-    courseWillTeach = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('timetable', 'dateStart', 'dateEnd', 'courseName', 'teacherRFC')
-    requestedAlready = Course.objects.filter(courseName=name, teachersInCourse__contains=get_jwt_identity()[0])
-    blacklisted = BlacklistRequest.objects.filter(course=name)
-    if(len(blacklisted)>0):                                                       # checa que no este en la blacklist
-        return(jsonify({'message': 'Ya no puede solicitar el curso'}), 401)
-    if(len(requestedAlready)>0):                                                    # checar que ya esta en el curso
-        return(jsonify({'message': 'Ya estas dentro del curso'}), 401)
-    if len(course) == 0:                                                        # checa si existe el curso
-        return(jsonify({'message': "Curso inexistente"}), 401)
-    else:                                                                       # NOTA: preguntar hasta cuando se puede solicitar un curso
-        if(course[0][4]==get_jwt_identity()[0]):
-            return(jsonify({'message': 'Usted imparte el curso'}), 401)    
-        else:
-            try:
-                courseInRequest = RequestCourse.objects.get(course=course[0][3])
-                if get_jwt_identity()[0] not in courseInRequest['requests']:
+    if request.method == 'GET':
+        course = Course.objects.filter(courseName=name).values_list('timetable', 'dateStart', 'dateEnd', 'courseName', 'teacherRFC')
+        courseWillTeach = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('timetable', 'dateStart', 'dateEnd', 'courseName', 'teacherRFC')
+        if len(course) == 0:                                                        # checa si existe el curso
+            return(jsonify({'message': "Curso inexistente"}), 401)
+        else:                                                                       # NOTA: preguntar hasta cuando se puede solicitar un curso
+            if(course[0][4]==get_jwt_identity()[0]):
+                return(jsonify({'message': 'Usted imparte el curso'}), 401)    
+            else:
+                try:
+                    courseInRequest = RequestCourse.objects.get(course=course[0][3])
+                    if get_jwt_identity()[0] not in courseInRequest['requests']:
+                        if len(courseWillTeach)>0:
+                            if(courseWillTeach[0][1] <= course[0][1] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course[0][2] <= courseWillTeach[0][2]):
+                                hoursCourseOne = course[0][0].split('-')  # Una marihuanada
+                                hoursCourseTwo = courseWillTeach[0][0].split('-')
+                                if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
+                                    return(jsonify({'message': 'Se empalma con la materia que imparte'}), 401)  
+                        courseInRequest["requests"].append(get_jwt_identity()[0])
+                        courseInRequest.save()
+                        return(jsonify({'message': 'Solicitud enviada!'}), 200)
+                    else:
+                        return(jsonify({'message': 'Ya ha solicitado el curso.'}), 401)
+                except:
                     if len(courseWillTeach)>0:
                         if(courseWillTeach[0][1] <= course[0][1] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course[0][2] <= courseWillTeach[0][2]):
                             hoursCourseOne = course[0][0].split('-')  # Una marihuanada
                             hoursCourseTwo = courseWillTeach[0][0].split('-')
                             if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
                                 return(jsonify({'message': 'Se empalma con la materia que imparte'}), 401)  
-                    courseInRequest["requests"].append(get_jwt_identity()[0])
-                    courseInRequest.save()
+                    RequestCourse(
+                        course = course[0][3],
+                        requests = [get_jwt_identity()[0]]
+                    ).save()
                     return(jsonify({'message': 'Solicitud enviada!'}), 200)
-                else:
-                    return(jsonify({'message': 'Ya ha solicitado el curso.'}), 401)
-            except:
-                if len(courseWillTeach)>0:
-                    if(courseWillTeach[0][1] <= course[0][1] <= courseWillTeach[0][2] or courseWillTeach[0][1] <= course[0][2] <= courseWillTeach[0][2]):
-                        hoursCourseOne = course[0][0].split('-')  # Una marihuanada
-                        hoursCourseTwo = courseWillTeach[0][0].split('-')
-                        if(hoursCourseOne[0] <= hoursCourseTwo[0] < hoursCourseOne[1] or hoursCourseOne[0] <= hoursCourseTwo[1] < hoursCourseOne[1]):
-                            return(jsonify({'message': 'Se empalma con la materia que imparte'}), 401)  
-                RequestCourse(
-                    course = course[0][3],
-                    requests = [get_jwt_identity()[0]]
-                ).save()
-                return(jsonify({'message': 'Solicitud enviada!'}), 200)
+    if request.method == 'POST':
+        try:
+            courseInRequest = RequestCourse.objects.get(course=name)
+            courseInRequest["requests"].append(data['rfc'])
+            courseInRequest.save()
+        except:
+            RequestCourse(
+                course = name,
+                requests = data['rfc']
+            ).save()
+        return(jsonify({'message': 'Solicitud enviada!'}), 200)
 
 @app.route('/editSerial/<course>', methods=['PUT'])
 @jwt_required
@@ -508,7 +514,29 @@ def teachersByDep(course):
                         'name': "{} {} {}".format(val[1], val[2], val[3])
                     })
         return jsonify({'teachers': teacherList}), 200
-        
+    # if request.method == 'GET':
+    #     teacherList = []
+    #     department = Teacher.objects.filter(rfc=get_jwt_identity()[0]).values_list('departament')
+    #     teachersData = Teacher.objects.filter(departament=department[0]).values_list('rfc', 'name', 'fstSurname', 'sndSurname', 'userType')
+    #     _course = Course.objects.filter(courseName=course).values_list('teacherRFC','teachersInCourse')
+    #     try:
+    #         _requestCourse = RequestCourse.objects.get(course=course)
+    #         _blacklistRequest = BlacklistRequest.objects.get(course=course)
+    #     except RequestCourse.DoesNotExist:
+    #         for val in teachersData:
+    #             if val[0] != _course[0][0] or val[0] not in _course[0][1]:
+    #                 teacherList.append({
+    #                     'rfc': val[0],
+    #                     'name': "{} {} {}".format(val[1], val[2], val[3])
+    #                 })
+    #     else:
+    #         for val in teachersData:
+    #             if val[4] != 'Jefe de departamento' or val[0] != _course[0][0] and val[0] not in _course[0][1] and val[0] not in _requestCourse['requests'] and val[0] not in _blacklistRequest['requests']:
+    #                 teacherList.append({
+    #                     'rfc': val[0],
+    #                     'name': "{} {} {}".format(val[1], val[2], val[3])
+    #                 })
+    #     return jsonify({'teachers': teacherList}), 200
 
 @app.route('/changePassword', methods=['POST'])
 @jwt_required
