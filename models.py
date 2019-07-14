@@ -86,6 +86,7 @@ class Qualified(db.Document):
 
 class LetterheadMetaData(db.Document):
     nameDocument = db.StringField()
+    shortName = db.StringField()
     typeDocument = db.StringField()
     version = db.IntField()
     emitDate = db.DateTimeField()
