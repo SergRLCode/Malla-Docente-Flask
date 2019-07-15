@@ -966,7 +966,7 @@ def metadata_route():                      # Only works to add meta data for eac
 @app.route('/metadata/<doc>', methods=['GET','PUT'])
 @jwt_required
 def metadata_u(doc):
-    info = LetterheadMetaData.objects.get(id=doc)
+    info = LetterheadMetaData.objects.get(shortName=doc)
     if(request.method=='GET'):
         data = letterheadSchema.dump(info)
         return jsonify(data[0])
