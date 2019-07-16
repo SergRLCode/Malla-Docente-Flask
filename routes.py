@@ -620,7 +620,7 @@ def removeTeacherinCourse_view(name):   # Ruta que elimina al docente del curso
         return(jsonify({"message": "Curso inexistente"}), 401)
     if (request.method == 'GET'):
         if(get_jwt_identity()[0] in course['teachersInCourse']):
-            course['teachersInCourse'].remove(data['rfc'])
+            course['teachersInCourse'].remove(get_jwt_identity()[0])
             if not course['teachersInCourse']:
                 course['teachersInCourse'] = ['No hay docentes registrados'] # La lista no debe estar vacia, porque lo toma como nulo y se borra el atributo del documento
             course.save()
