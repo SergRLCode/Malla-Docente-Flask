@@ -7,6 +7,7 @@ from passlib.hash import pbkdf2_sha256 as sha256
 from reportlab.pdfgen import canvas
 from app import app, jwt, redis
 from marsh import *
+from auth import *
 
 
 months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
@@ -170,7 +171,10 @@ def available_courses():            # Ruta que retorna una lista con los cursos 
         availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC', 'timetable', 'teachersInCourse', 'state')
         coursesRequested = RequestCourse.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
         coursesRejected = BlacklistRequest.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
-        myCourses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName')
+        if get_jwt_identity()[1] != 0:
+            myCourses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName')
+        else:
+            myCourses = []
         arrayToSend = []
         for vals in availableCourses:
             if get_jwt_identity()[0] not in vals[3] and vals[0] not in coursesRequested and vals[0] not in coursesRejected and vals[0] not in myCourses:
