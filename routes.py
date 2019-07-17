@@ -700,6 +700,51 @@ def teacherFailedCourse(name):
                 return jsonify({"message": "Docente no registrado"}), 404
         return jsonify({'message': 'Success!'}), 200
 
+@app.route('/getRequests', methods=['GET'])
+@jwt_required
+def get_Requests():
+    if request.method == 'GET':
+        list_of_courses = []
+        allData = []
+        myRequests = RequestCourse.objects.filter(requests__contains=get_jwt_identity()[0])
+        for val in myRequests:
+            list_of_courses.append(val['course'])
+        for val in list_of_courses:
+            _course_ = Course.objects.filter(courseName=val).values_list('courseName', 'teacherRFC', 'timetable')
+            teacherData = Teacher.objects.filter(rfc=_course_[0][1]).values_list('name', 'fstSurname', 'sndSurname')
+            allData.append({
+                'name': _course_[0][0],
+                'teacher': "%s %s %s" % (teacherData[0][0], teacherData[0][1], teacherData[0][2]),
+                'timetable': _course_[0][2]
+            })
+        return jsonify({'courses': allData})
+
+@app.route('/cancelRequest/<course>', methods=['GET'])
+@jwt_required
+def cancelRequest():
+    if request.method == 'GET':
+        try:
+            request = RequestCourse.objects.get(course=course)
+        except:
+            return jsonify({'message': "Don't exists"})
+        else:
+            request['requests'].remove(get_jwt_identity()[0])
+            request.save()
+            if(len(request['requests'])==0):
+                request.delete()
+            try:
+                blacklist = BlacklistRequest.objects.get(course=course)
+            except:
+                BlacklistRequest(
+                    course=course,
+                    requests=[get_jwt_identity()[0]]
+                ).save()
+            else:
+                blacklist['requests'].append(get_jwt_identity()[0])
+                blacklist.save()
+            return jsonify({'message': "Canceled"})
+            
+
 @app.route('/courses/coursesList', methods=['GET'])
 @jwt_required
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 
