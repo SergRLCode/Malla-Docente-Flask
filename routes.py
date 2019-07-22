@@ -8,7 +8,6 @@ from reportlab.pdfgen import canvas
 from app import app, jwt, redis
 from marsh import *
 from auth import *
-import requests as req
 
 months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
@@ -728,14 +727,14 @@ def get_Requests():
 def cancelRequest(course):
     if request.method == 'GET':
         try:
-            request = RequestCourse.objects.get(course=course)
+            _request = RequestCourse.objects.get(course=course)
         except:
             return jsonify({'message': "Don't exists"})
         else:
-            request['requests'].remove(get_jwt_identity()[0])
-            request.save()
-            if(len(request['requests'])==0):
-                request.delete()
+            _request['requests'].remove(get_jwt_identity()[0])
+            _request.save()
+            if(len(_request['requests'])==0):
+                _request.delete()
             try:
                 blacklist = BlacklistRequest.objects.get(course=course)
             except:
