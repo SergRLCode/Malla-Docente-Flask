@@ -1,23 +1,23 @@
-def isAdmin(type):
-    if type == 0:
+def isAdmin(userType):
+    if userType == 0:
         return True
     else:
         return False
 
-def isBoss(type):
-    if type == 1:
+def isBoss(userType):
+    if userType == 1:
         return True
     else:
         return False
 
-def isComm(type):
-    if type == 2:
+def isComm(userType):
+    if userType == 2:
         return True
     else:
         return False
 
-def isTeacher(type):
-    if type == 3:
+def isTeacher(userType):
+    if userType == 3:
         return True
     else:
         return False

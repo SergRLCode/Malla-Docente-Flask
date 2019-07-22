@@ -8,7 +8,7 @@ from reportlab.pdfgen import canvas
 from app import app, jwt, redis
 from marsh import *
 from auth import *
-
+import requests as req
 
 months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
@@ -75,7 +75,7 @@ def logout_user():                  # Un logout que agrega el ID del JWT de acce
     return(jsonify({'message': 'Bye bye!'}), 200)
 
 @app.route('/courses', methods=['GET', 'POST'])
-@jwt_required
+# @jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
         all_courses = Course.objects.all()
@@ -373,7 +373,7 @@ def my_courses_will_teach():
     return jsonify({'courses': coursesWillTeach}), 200
 
 @app.route('/teachers', methods=['GET', 'POST'])
-@jwt_required
+# @jwt_required
 def teachers():                     # Ruta para agregar un docente o consultar todos
     if (request.method == 'GET'):
         teachers = Teacher.objects.all()
@@ -725,7 +725,7 @@ def get_Requests():
 
 @app.route('/cancelRequest/<course>', methods=['GET'])
 @jwt_required
-def cancelRequest():
+def cancelRequest(course):
     if request.method == 'GET':
         try:
             request = RequestCourse.objects.get(course=course)
@@ -748,7 +748,6 @@ def cancelRequest():
                 blacklist.save()
             return jsonify({'message': "Canceled"})
             
-
 @app.route('/courses/coursesList', methods=['GET'])
 @jwt_required
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 

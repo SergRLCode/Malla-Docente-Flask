@@ -139,7 +139,7 @@ def assistantList(teachers, courseTeacher, course):
         ])
     tableSignsList = [
         [set_NU(courseTeacher[0]), set_N('ME. CLAUDIA CRUZ NAVARRO')],
-        [set_N("NOMBRE Y FIRMA DEL INSTRUCTOR"), set_N("NOMBRE Y FIRMA DEL INSTRUCTOR")],
+        [set_N("NOMBRE Y FIRMA DEL INSTRUCTOR"), set_N("NOMBRE Y FIRMA DEL COORDINADOR")],
         [set_N("R.F.C.: {}".format(courseTeacher[1]))],
         [set_N('C.U.R.P.: campoSinAgregarxd')]
     ]
