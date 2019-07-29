@@ -74,7 +74,7 @@ def logout_user():                  # Un logout que agrega el ID del JWT de acce
     return(jsonify({'message': 'Bye bye!'}), 200)
 
 @app.route('/courses', methods=['GET', 'POST'])
-# @jwt_required
+@jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
         all_courses = Course.objects.all()
@@ -169,11 +169,12 @@ def available_courses():            # Ruta que retorna una lista con los cursos 
     if(request.method=='GET'):
         availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC', 'timetable', 'teachersInCourse', 'state')
         coursesRequested = RequestCourse.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
-        coursesRejected = BlacklistRequest.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
-        if get_jwt_identity()[1] != 0:
+        if get_jwt_identity()[1] != 0 and get_jwt_identity()[1] != 1:
             myCourses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName')
+            coursesRejected = BlacklistRequest.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
         else:
             myCourses = []
+            coursesRejected = []
         arrayToSend = []
         for vals in availableCourses:
             if get_jwt_identity()[0] not in vals[3] and vals[0] not in coursesRequested and vals[0] not in coursesRejected and vals[0] not in myCourses:
@@ -372,7 +373,7 @@ def my_courses_will_teach():
     return jsonify({'courses': coursesWillTeach}), 200
 
 @app.route('/teachers', methods=['GET', 'POST'])
-# @jwt_required
+@jwt_required
 def teachers():                     # Ruta para agregar un docente o consultar todos
     if (request.method == 'GET'):
         teachers = Teacher.objects.all()
@@ -544,15 +545,20 @@ def change_password():          # No es necesario mencionar para que es, con el 
 @app.route('/requestsTo/<name>')
 @jwt_required
 def requests_to(name):
-    requests = RequestCourse.objects.get(course=name)
-    arrayToSend = []
-    for val in requests['requests']:
-        teacherName = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
-        arrayToSend.append({
-            'rfc': val,
-            'name': "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
-        })
-    return jsonify(arrayToSend), 200
+    try:
+        requests = RequestCourse.objects.get(course=name)
+    except:
+        arrayToSend = []
+        return jsonify(arrayToSend), 200
+    else:
+        arrayToSend = []
+        for val in requests['requests']:
+            teacherName = Teacher.objects.filter(rfc=val).values_list('name', 'fstSurname', 'sndSurname')
+            arrayToSend.append({
+                'rfc': val,
+                'name': "{} {} {}".format(teacherName[0][0], teacherName[0][1], teacherName[0][2])
+            })
+        return jsonify(arrayToSend), 200
 
 @app.route('/addTeacherinCourse/<course_name>', methods=['POST'])
 @jwt_required
