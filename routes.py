@@ -168,7 +168,7 @@ def courses_by_period(period):
 def available_courses():            # Ruta que retorna una lista con los cursos disponibles, siendo el dia de inicio mayor a la fecha del servidor
     if(request.method=='GET'):
         availableCourses = Course.objects.filter(dateStart__gte=dt.now().date()).values_list('courseName', 'teacherRFC', 'timetable', 'teachersInCourse', 'state')
-        if get_jwt_identity()[1] != 0:
+        if get_jwt_identity()[1] != 0 and get_jwt_identity()[1] != 1:
             myCourses = Course.objects.filter(teacherRFC=get_jwt_identity()[0]).values_list('courseName')
             coursesRequested = RequestCourse.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
             coursesRejected = BlacklistRequest.objects.filter(requests__contains=get_jwt_identity()[0]).values_list('course')
