@@ -4,6 +4,7 @@ from pdfs import assistantList, coursesList, inscription, pollDocument, concentr
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request, make_response
 from passlib.hash import pbkdf2_sha256 as sha256
+from mongoengine import errors as e
 from reportlab.pdfgen import canvas
 from app import app, jwt, redis
 from marsh import *
@@ -229,6 +230,8 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
             course['totalHours'] = totalHrs
         else:
             return(jsonify({'message': 'RFC invalido'}), 404)
+        if totalHrs <= 0 or totalHrs > 40:
+            return(jsonify({'message': 'Verifique bien las fechas y horas'}), 400)            
         course.save()
         return(jsonify({'message': 'Cambios guardados.'}), 200)
     elif (request.method == 'DELETE'):############################################### Ya no moverle
@@ -461,8 +464,12 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
             prevTeacher['userType'] = 'Docente'
             prevTeacher['position'] = 'Docente chido'
             prevTeacher.save()      
-        teacher.save()
-        return(jsonify({'message': 'Datos guardados.'}), 200)
+        try:
+            teacher.save()
+        except e.NotUniqueError:
+            return jsonify({'message': 'RFC duplicado'}), 403
+        else:
+            return(jsonify({'message': 'Datos guardados.'}), 200)
     elif request.method == 'DELETE':
         # courses = Course.objects.filter(teachersInCourse__contains=teacher.rfc)
         requests = RequestCourse.objects.filter(requests__contains=teacher.rfc)
