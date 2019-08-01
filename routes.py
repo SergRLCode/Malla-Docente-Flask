@@ -883,6 +883,8 @@ def data_con():                         # Ruta que regresa un PDF con los datos 
                 depName.append(val)
         if "" in depName:
             depName.remove("")
+        if "Desarrollo Académico" in depName:
+            depName.remove("Desarrollo Académico")
         # Docentes por departamento
         depTeacherNum = []
         for val in depName:
