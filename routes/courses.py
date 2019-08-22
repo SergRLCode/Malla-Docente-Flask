@@ -1,6 +1,6 @@
+from models import Course, Teacher, RequestCourse, BlacklistRequest
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime as dt, timedelta as td
-from models import Course, Teacher, RequestCourse
 from mongoengine import errors as e
 from flask import jsonify, request
 from app import app, redis
