@@ -18,7 +18,7 @@ db = MongoEngine(app)
 jwt = JWTManager(app)
 CORS(app)
 
-from routes import *
+from routes_endpoints import *
 
 message = """
 Options and arguments:
