@@ -38,7 +38,7 @@ def my_courses_will_teach():
     return jsonify({'courses': coursesWillTeach}), 200
 
 @app.route('/coursesOf/<rfc>', methods=['GET'])
-# @jwt_required
+@jwt_required
 def courses_of(rfc):
     if request.method == 'GET':
         data_courses = []
