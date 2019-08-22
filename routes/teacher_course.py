@@ -1,5 +1,6 @@
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import Course, Teacher, Qualified
+from datetime import datetime as dt
 from flask import jsonify, request
 from app import app
 
@@ -37,11 +38,11 @@ def my_courses_will_teach():
     return jsonify({'courses': coursesWillTeach}), 200
 
 @app.route('/coursesOf/<rfc>', methods=['GET'])
-@jwt_required
+# @jwt_required
 def courses_of(rfc):
     if request.method == 'GET':
         data_courses = []
-        courses = Course.objects.filter(teachersInCourse__contains=rfc).values_list('courseName', 'teacherRFC')
+        courses = Course.objects.filter(teachersInCourse__contains=rfc).values_list('courseName', 'teacherRFC', 'dateStart')
         for val in courses:
             teacherData = Teacher.objects.filter(rfc=val[1]).values_list('name', 'fstSurname', 'sndSurname')
             qualifieds = Qualified.objects.filter(course=val[0]).values_list('approved', 'failed')
@@ -53,7 +54,8 @@ def courses_of(rfc):
                 {
                     'course': val[0],
                     'teacher': '%s %s %s'%(teacherData[0][0], teacherData[0][1], teacherData[0][2]),
-                    'qualified': status
+                    'qualified': status,
+                    'year': val[2].year
                 }
             )
         return jsonify({'courses': data_courses})
