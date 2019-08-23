@@ -6,6 +6,11 @@ from models import Course, Teacher
 from app import app, redis
 from auth import *
 
+def periodOfTime(initDate, endDate):
+    return 'Del {} al {} de {} del {}'.format(initDate.day, endDate.day, months[endDate.month-1], endDate.year) if initDate.month==endDate.month else 'Del {} de {} al {} de {} del {}'.format(initDate.day, months[initDate.month-1], endDate.day, months[endDate.month-1], endDate.year) if initDate.year==endDate.year else 'Del {} de {} del {} al {} de {} del {}'.format(initDate.day, months[initDate.month-1], initDate.year, endDate.day, months[endDate.month-1], endDate.year)
+
+months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
 @app.route('/courses/coursesList', methods=['GET'])
 @jwt_required
 def coursesList_view():             # Ruta que regresa el documento PDF con lista de cursos disponibles 
@@ -113,11 +118,26 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
         else:
             return(jsonify({'message': 'Curso inexistente.'}), 404)
 
-@app.route('/acreditation/<rfc>', methods=['GET'])
-# @jwt_required
-def _acreditation(rfc):
+@app.route('/acreditation/<course>', methods=['GET'])
+@jwt_required
+def _acreditation(course):
     if request.method == 'GET':
-        return acreditation(rfc)
+        try:
+            data = Teacher.objects.get(rfc=get_jwt_identity()[0])
+        except:
+            return jsonify({'message': "Don't exists"}), 404
+        try:
+            _course = Course.objects.get(courseName=course)
+        except:
+            return jsonify({'message': "Don't exists"}), 404
+        someData = {
+            'name': '%s %s %s'%(data['name'], data['fstSurname'], data['sndSurname']),
+            'course': _course['courseName'],
+            'serial': _course['serial'],
+            'period': periodOfTime(_course['dateStart'], _course['dateEnd']).upper(),
+            'duration': _course['totalHours']
+        }
+        return acreditation(someData)
 
 @app.route('/dataConcentrated/<year>', methods=['GET'])
 @jwt_required

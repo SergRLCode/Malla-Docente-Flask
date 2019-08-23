@@ -464,13 +464,53 @@ def pollDocument(answers, courseData, teacher, departament):
 
 def acreditation(data):
     output = BytesIO()
-    doc = SimpleDocTemplate(output, pagesize = letter, topMargin=100, bottomMargin=50)
+    doc = SimpleDocTemplate(output, pagesize = letter, topMargin=127, bottomMargin=50)
+    font = 'Times-Roman'
+    topMessage = [[set_title('<font name="%s"><b>EL TECNOLÓGICO NACIONAL DE MÉXICO Y EL INSTITUTO TECNOLÓGICO DE CIUDAD VALLES</b></font>'%font)]]
+    otorgan = [[set_N('<font name="%s" size="15">OTORGAN EL PRESENTE</font>'%font)]]
+    reconocimiento =[[set_N('<font name="%s" size="26">RECONOCIMIENTO</font>'%font)]]
+    a = [[set_N('<font name="%s" size="15">A</font>'%font)]]
+    name =[[set_N('<font name="%s" size="26">%s</font>'%(font, data['name']))]]
+    porSu = [[set_N('<font name="%s" size="13">POR SU PARTICIPACIÓN EN EL CURSO</font>'%(font))]]
+    course = [[set_N('<font name="%s" size="13">"%s"</font>'%(font, data['course']))]]
+    serial = [[set_N('<font name="%s" size="13">%s</font>'%(font, data['serial']))]]
+    impartido = [[set_N('<font name="%s" size="13">IMPARTIDO EN LAS INSTALACIONES DEL INSTITUTO TECNOLÓGICO DE</font>'%font)]]
+    impartido2 = [[set_N('<font name="%s" size="13">CIUDAD VALLES, DEL %s,</font>'%(font, data['period']))]]
+    impartido3 = [
+        [set_N('<font name="%s" size="13">CON UNA DURACIÓN DE %s HORAS.</font>'%(font, data['duration']))]
+    ]
 
-    topMessage = [[set_title('<b>EL TECNOLÓGICO NACIONAL DE MÉXICO Y EL INSTITUTO TECNOLÓGICO DE CIUDAD VALLES</b>')]]
     _topMessage = Table(topMessage, colWidths=(470))
+    _otorgan = Table(otorgan)
+    _reconocimiento = Table(reconocimiento)
+    a = Table(a)
+    name = Table(name)
+    porSu = Table(porSu)
+    course = Table(course)
+    serial = Table(serial)
+    impartido = Table(impartido, colWidths=(470))
+    impartido2 = Table(impartido2)
+    impartido3 = Table(impartido3)
+
     story = list()
     story.append(_topMessage)
-
+    story.append(Spacer(1,inch/5))
+    story.append(_otorgan)
+    story.append(Spacer(1,inch/4))
+    story.append(_reconocimiento)
+    story.append(Spacer(1,inch/2))
+    story.append(a)
+    story.append(Spacer(1,inch/3))
+    story.append(name)
+    story.append(Spacer(1,inch/1.5))
+    story.append(porSu)
+    story.append(course)
+    story.append(serial)
+    story.append(Spacer(1,inch/5))
+    story.append(impartido)
+    story.append(impartido2)
+    story.append(impartido3)
+    
     doc.build(story, onFirstPage=portraitLetterhead, onLaterPages=portraitLetterhead)
     pdf_out = output.getvalue()
     output.close()
