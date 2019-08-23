@@ -46,7 +46,7 @@ def my_courses_will_teach():
 @jwt_required
 def courses_of(rfc):
     if request.method == 'GET':
-        data_courses = []
+        data_courses = list()
         courses = Course.objects.filter(teachersInCourse__contains=rfc).values_list('courseName', 'teacherRFC', 'dateStart')
         for val in courses:
             teacherData = Teacher.objects.filter(rfc=val[1]).values_list('name', 'fstSurname', 'sndSurname')

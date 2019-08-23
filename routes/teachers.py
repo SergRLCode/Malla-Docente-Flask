@@ -1,5 +1,5 @@
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_raw_jwt
-from models import Course, Teacher, LetterheadMetaData, Qualified, BlacklistJWT, RequestCourse, BlacklistRequest
+from models import Course, Teacher, LetterheadMetaData, Qualified, RequestCourse, BlacklistRequest
 from datetime import datetime as dt, timedelta as td
 from passlib.hash import pbkdf2_sha256 as sha256
 from auth import requires_access_level
@@ -186,7 +186,6 @@ def _getTeachersByDep():
                     'studyLevel': val['studyLevel'],
                     'degree': val['degree']
                 })
-
         return jsonify({'teachers': teachers})
 
 @app.route('/changePassword', methods=['POST'])

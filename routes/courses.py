@@ -150,8 +150,13 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         return(jsonify({"message": "Don't exists"}), 404)
     if (request.method == 'GET'):################################################### Ya no moverle
         datos = courseSchema.dump(course)
-        limitDays = int(redis.get('days').decode('utf-8'))
+        qualifieds = Qualified.objects.filter(course=name).values_list('approved', 'failed')
         newDictToSend = datos[0]
+        try:
+            newDictToSend['qualified'] = 'Aprobado' if (rfc in qualifieds[0][0]) else 'Reprobado' if (rfc in qualifieds[0][1]) else 'Sin calificar'
+        except:
+            newDictToSend['qualified'] = 'Sin calificar'
+        limitDays = int(redis.get('days').decode('utf-8'))
         endDay = dt.strptime(datos[0]['dateEnd'].replace("T00:00:00+00:00", ""), "%Y-%m-%d")
         del newDictToSend['id']
         keyOfRedis = name.replace(" ", "_").lower()
