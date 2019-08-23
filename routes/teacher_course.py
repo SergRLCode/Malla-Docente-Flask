@@ -47,9 +47,9 @@ def my_courses_will_teach():
 def courses_of(rfc):
     if request.method == 'GET':
         data_courses = []
-        courses = Course.objects.filter(teachersInCourse__contains=rfc).values_list('courseName', 'dateStart')
-        teacherData = Teacher.objects.filter(rfc=rfc).values_list('name', 'fstSurname', 'sndSurname')
+        courses = Course.objects.filter(teachersInCourse__contains=rfc).values_list('courseName', 'teacherRFC', 'dateStart')
         for val in courses:
+            teacherData = Teacher.objects.filter(rfc=val[1]).values_list('name', 'fstSurname', 'sndSurname')
             qualifieds = Qualified.objects.filter(course=val[0]).values_list('approved', 'failed')
             try:
                 status = 'Aprobado' if (rfc in qualifieds[0][0]) else 'Reprobado' if (rfc in qualifieds[0][1]) else 'Sin calificar'
@@ -60,7 +60,7 @@ def courses_of(rfc):
                     'course': val[0],
                     'teacher': '%s %s %s'%(teacherData[0][0], teacherData[0][1], teacherData[0][2]),
                     'qualified': status,
-                    'year': val[1].year
+                    'year': val[2].year
                 }
             )
         return jsonify({'courses': data_courses})
