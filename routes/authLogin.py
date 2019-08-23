@@ -35,7 +35,7 @@ def login_user():                   # El tipico login de cada sistema
     try:
         teacher = Teacher.objects.get(rfc=data["rfc"])
         if sha256.verify(data["pin"], teacher["pin"]):
-            numUser = 0 if teacher['userType']=='Administrador' else 1 if teacher['userType']=='Jefe de departamento' else 2 if teacher['userType']=='Comunicación' else 3
+            numUser = 0 if teacher['userType']=='Administrador' else 1 if teacher['userType']=='Jefe de departamento' else 2 if teacher['userType']=='Comunicación' else 3 if teacher['internal'] == True else 4
             jwtIdentity = [teacher["rfc"], numUser]
             try:
                 previousTkn = BlacklistJWT.objects.filter(identity=jwtIdentity).values_list('identity')
