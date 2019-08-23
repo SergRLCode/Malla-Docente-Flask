@@ -152,11 +152,10 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         datos = courseSchema.dump(course)
         qualifieds = Qualified.objects.filter(course=name).values_list('approved', 'failed')
         newDictToSend = datos[0]
-        
+        print(rfc, qualifieds[0][0], qualifieds[0][1])
         try:
             newDictToSend['qualified'] = 'Aprobado' if (rfc in qualifieds[0][0]) else 'Reprobado' if (rfc in qualifieds[0][1]) else 'Sin calificar'
-            print(rfc, qualifieds[0][0], qualifieds[0][1])
-            print(rfc in qualifieds[0][0], rfc in qualifieds[0][1])
+            # print(rfc in qualifieds[0][0], rfc in qualifieds[0][1])
         except:
             newDictToSend['qualified'] = 'Sin calificar'
         
