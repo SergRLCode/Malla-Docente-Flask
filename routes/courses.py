@@ -15,7 +15,6 @@ months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agost
 @jwt_required
 def courses():                      # Ruta para agregar un curso o consultar todos
     if (request.method == 'GET'):
-        print(get_jwt_identity())
         all_courses = Course.objects.all()
         data = courseSchemas.dump(all_courses)
         for course in data[0]:
