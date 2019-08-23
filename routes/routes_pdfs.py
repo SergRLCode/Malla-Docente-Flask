@@ -1,4 +1,4 @@
-from pdfs import assistantList, coursesList, inscription, pollDocument, concentrated
+from pdfs import assistantList, coursesList, inscription, pollDocument, concentrated, acreditation
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request
@@ -112,6 +112,12 @@ def poll_view(name):                # Ruta que regresa el PDF con la encuesta co
                 return(jsonify({'message': 'Curso no registrado.'}), 404)
         else:
             return(jsonify({'message': 'Curso inexistente.'}), 404)
+
+@app.route('/acreditation/<rfc>', methods=['GET'])
+# @jwt_required
+def _acreditation(rfc):
+    if request.method == 'GET':
+        return acreditation(rfc)
 
 @app.route('/dataConcentrated/<year>', methods=['GET'])
 @jwt_required

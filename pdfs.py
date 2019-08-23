@@ -462,6 +462,23 @@ def pollDocument(answers, courseData, teacher, departament):
     story.append(tableDate)
     return returnPDF(story, "encuesta", letter, 85)
 
+def acreditation(data):
+    output = BytesIO()
+    doc = SimpleDocTemplate(output, pagesize = letter, topMargin=100, bottomMargin=50)
+
+    topMessage = [[set_title('<b>EL TECNOLÓGICO NACIONAL DE MÉXICO Y EL INSTITUTO TECNOLÓGICO DE CIUDAD VALLES</b>')]]
+    _topMessage = Table(topMessage, colWidths=(470))
+    story = list()
+    story.append(_topMessage)
+
+    doc.build(story, onFirstPage=portraitLetterhead, onLaterPages=portraitLetterhead)
+    pdf_out = output.getvalue()
+    output.close()
+    response = make_response(pdf_out)
+    response.headers['Content-Disposition'] = "attachment; filename=asd.pdf"
+    response.headers['Content-Type'] = 'application/pdf'
+    return response
+
 def concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados, depPercentYesCoursed, noCapacitados, depPercentNoCoursed, totalCourses):
     output = BytesIO()
     doc = SimpleDocTemplate(output, pagesize=landscape(legal), topMargin=30, bottomMargin=50)
