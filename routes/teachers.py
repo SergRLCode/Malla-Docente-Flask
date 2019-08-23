@@ -2,6 +2,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_raw_jwt
 from models import Course, Teacher, LetterheadMetaData, Qualified, BlacklistJWT, RequestCourse, BlacklistRequest
 from datetime import datetime as dt, timedelta as td
 from passlib.hash import pbkdf2_sha256 as sha256
+from auth import requires_access_level
 from mongoengine import errors as e
 from flask import jsonify, request
 from app import app
@@ -169,19 +170,23 @@ def teachersByDep(course):       # Ruta que visualiza los docentes por departame
         finally:
             return jsonify({'teachers': teacherList}), 200
 
-@app.route('/getTeachersByDep/<departament>', methods=['GET'])
+@app.route('/getTeachersByDep', methods=['GET'])
 @jwt_required
-def _getTeachersByDep(departament):
+@requires_access_level([1])
+def _getTeachersByDep():
     if request.method == 'GET':
         teachers = list()
-        teachersOf = Teacher.objects.filter(departament=departament)
+        _departament = Teacher.objects.filter(rfc=get_jwt_identity()[0], userType='Jefe de departamento').values_list('departament')
+        teachersOf = Teacher.objects.filter(departament=_departament[0])
         for val in teachersOf:
-            teachers.append({
-                'name': '%s %s %s'%(val['name'], val['fstSurname'], val['sndSurname']),
-                'rfc': val['rfc'],
-                'studyLevel': val['studyLevel'],
-                'degree': val['degree']
-            })
+            if val['rfc'] != get_jwt_identity()[0]:
+                teachers.append({
+                    'name': '%s %s %s'%(val['name'], val['fstSurname'], val['sndSurname']),
+                    'rfc': val['rfc'],
+                    'studyLevel': val['studyLevel'],
+                    'degree': val['degree']
+                })
+
         return jsonify({'teachers': teachers})
 
 @app.route('/changePassword', methods=['POST'])
