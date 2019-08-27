@@ -46,8 +46,8 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                     userType = data["userType"],
                     pin = sha256.hash(data["pin"])
                 ).save()
-            except:
-                return(jsonify({'message': 'Error, verifique bien la informacion'}), 401)
+            except e.NotUniqueError:
+                return(jsonify({'message': 'Docente previamente registrado'}), 401)
             return(jsonify({'message': 'Docente agregado'}), 200)
         else:
             try:
