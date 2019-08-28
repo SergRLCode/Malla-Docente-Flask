@@ -2,11 +2,11 @@ asn1crypto==0.24.0
 astroid==2.2.5
 attrs==19.1.0
 blis==0.2.4
-Brlapi==0.6.6
 certifi==2019.6.16
 chardet==3.0.4
 Click==7.0
 command-not-found==0.3
+CouchDB==1.2
 cryptography==2.1.4
 cymem==2.0.2
 defer==1.0.6
@@ -39,8 +39,10 @@ mccabe==0.6.1
 mongoengine==0.17.0
 murmurhash==1.0.2
 netifaces==0.10.4
+numpy==1.17.0
 olefile==0.45.1
 onboard==1.4.1
+pandas==0.25.0
 passlib==1.7.1
 pexpect==4.2.1
 Pillow==6.1.0
@@ -53,10 +55,12 @@ pycodestyle==2.5.0
 pycrypto==2.6.1
 pygobject==3.26.1
 PyJWT==1.7.1
+pyknow==1.7.0
 pylint==2.3.1
 pymongo==3.8.0
 PyQt5-sip==4.19.18
 pyrsistent==0.15.3
+pyserial==3.4
 python-apt===1.6.4-elementary6-ubuntu5.0.1
 python-dateutil==2.8.0
 python-debian==0.1.32
@@ -70,6 +74,7 @@ requests-unixsocket==0.1.5
 schema==0.6.7
 SecretStorage==2.3.1
 six==1.12.0
+spacy==2.1.4
 srsly==0.0.7
 thinc==7.0.4
 toml==0.10.0
