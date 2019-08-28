@@ -35,7 +35,6 @@ murmurhash==1.0.2
 netifaces==0.10.4
 numpy==1.17.0
 olefile==0.45.1
-pandas==0.25.0
 passlib==1.7.1
 pexpect==4.2.1
 Pillow==6.1.0
@@ -50,8 +49,6 @@ pylint==2.3.1
 pymongo==3.8.0
 PyQt5-sip==4.19.18
 pyrsistent==0.15.3
-pyserial==3.4
-python-apt===1.6.4-elementary6-ubuntu5.0.1
 python-dateutil==2.8.0
 python-debian==0.1.32
 pytz==2019.1
