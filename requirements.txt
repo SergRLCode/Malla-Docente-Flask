@@ -9,8 +9,6 @@ CouchDB==1.2
 cryptography==2.1.4
 cymem==2.0.2
 dnspython==1.16.0
-en-core-web-sm==2.1.0
-es-core-news-sm==2.1.0
 Flask==1.0.2
 Flask-Cors==3.0.7
 Flask-JWT-Extended==3.18.1
