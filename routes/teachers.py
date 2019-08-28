@@ -48,7 +48,8 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                 ).save()
             except e.NotUniqueError:
                 return(jsonify({'message': 'Docente previamente registrado'}), 401)
-            return(jsonify({'message': 'Docente agregado'}), 200)
+            else:
+                return(jsonify({'message': 'Docente agregado'}), 200)
         else:
             try:
                 Teacher(
@@ -69,7 +70,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                     pin = sha256.hash(data["pin"])
                 ).save()
                 return(jsonify({'message': 'Docente externo registrado'}), 200)
-            except:
+            except e.NotUniqueError:
                 return(jsonify({'message': 'Docente previamente registrado'}), 401)
 
 @app.route('/teacher/<rfc>', methods=['GET', 'PUT', 'DELETE'])
