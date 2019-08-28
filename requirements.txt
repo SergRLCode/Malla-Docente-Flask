@@ -42,7 +42,6 @@ Pillow==6.1.0
 pipfile==0.0.2
 plac==0.9.6
 preshed==2.0.1
-progressbar==2.3
 pycairo==1.16.2
 pycodestyle==2.5.0
 pycrypto==2.6.1
