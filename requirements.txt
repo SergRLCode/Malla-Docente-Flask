@@ -46,7 +46,6 @@ pycairo==1.16.2
 pycodestyle==2.5.0
 pycrypto==2.6.1
 PyJWT==1.7.1
-pyknow==1.7.0
 pylint==2.3.1
 pymongo==3.8.0
 PyQt5-sip==4.19.18
