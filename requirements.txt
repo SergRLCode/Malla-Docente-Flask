@@ -71,4 +71,3 @@ wasabi==0.2.2
 Werkzeug==0.15.2
 wrapt==1.11.1
 WTForms==2.2.1
-xkit==0.0.0
