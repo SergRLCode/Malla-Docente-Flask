@@ -1,7 +1,4 @@
 # Python
 __pycache__
-backend/venv
-*.pyc
-
-# venv
 /malla
+*.pyc
