@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from mongoengine import connect as conectionMongo
+from mongoengine import connect as conectionMongo, disconnect
 from flask_jwt_extended import JWTManager
 from flask_mongoengine import MongoEngine
 from flask_cors import CORS
@@ -20,10 +20,12 @@ conectionMongo(
 )
 
 redis = redis.StrictRedis(password='invierno')
+disconnect()
 db = MongoEngine(app)
 jwt = JWTManager(app)
 CORS(app)
 
+disconnect()
 from routes_endpoints import *
 
 message = """
