@@ -15,7 +15,7 @@ app.config['JWT_BLACKLIST_ENABLED'] = True
 app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
 
 connect(
-    'Capacitacion', alias='default'
+    'Capacitacion', alias='default',
     host='mongodb+srv://sergioRL:invierno%5F1@databases-k71qn.gcp.mongodb.net/test?retryWrites=true&w=majority'
 )
 
