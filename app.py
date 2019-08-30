@@ -9,6 +9,7 @@ import redis
 import sys
 
 app = Flask(__name__)
+mongoengine.connection.disconnect()
 app.config['MONGODB_SETTINGS'] = {'db':'Capacitacion', 'db_alias':'default'}
 app.config['JWT_SECRET_KEY'] = 'uCm3uZm1kGPlB7ATTlsMoA'
 app.config['JWT_BLACKLIST_ENABLED'] = True
@@ -18,13 +19,14 @@ mongoengine.connect(
     host='mongodb+srv://sergioRL:invierno%5F1@databases-k71qn.gcp.mongodb.net/test?retryWrites=true&w=majority'
 )
 
+
 redis = redis.StrictRedis(password='invierno')
-# disconnect()
+mongoengine.connection.disconnect()
 db = MongoEngine(app)
 jwt = JWTManager(app)
 CORS(app)
 
-# disconnect()
+mongoengine.connection.disconnect()
 from routes_endpoints import *
 
 message = """
