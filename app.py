@@ -9,14 +9,18 @@ import redis
 import sys
 
 app = Flask(__name__)
-app.config['MONGODB_SETTINGS'] = {'db':'Capacitacion', 'alias':'default'}
+app.config['MONGODB_SETTINGS'] = {
+    'db':'Capacitacion', 
+    'alias':'default',
+    'host': 'mongodb+srv://sergioRL:invierno%5F1@databases-k71qn.gcp.mongodb.net/test?retryWrites=true&w=majority'
+    }
 app.config['JWT_SECRET_KEY'] = 'uCm3uZm1kGPlB7ATTlsMoA'
 app.config['JWT_BLACKLIST_ENABLED'] = True
 app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
 
-mongoengine.connect(
-    host='mongodb+srv://sergioRL:invierno%5F1@databases-k71qn.gcp.mongodb.net/test?retryWrites=true&w=majority'
-)
+# mongoengine.connect(
+#     host='mongodb+srv://sergioRL:invierno%5F1@databases-k71qn.gcp.mongodb.net/test?retryWrites=true&w=majority'
+# )
 
 redis = redis.StrictRedis(password='invierno')
 # mongoengine.connection.disconnect()
