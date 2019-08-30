@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from mongoengine import connect as conectionMongo, disconnect
+from mongoengine import connect, disconnect
 from flask_jwt_extended import JWTManager
 from flask_mongoengine import MongoEngine
 from flask_cors import CORS
@@ -14,8 +14,8 @@ app.config['JWT_SECRET_KEY'] = 'uCm3uZm1kGPlB7ATTlsMoA'
 app.config['JWT_BLACKLIST_ENABLED'] = True
 app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
 
-conectionMongo(
-    db='Capacitacion',
+connect(
+    'Capacitacion',
     host='mongodb+srv://sergioRL:invierno%5F1@databases-k71qn.gcp.mongodb.net/test?retryWrites=true&w=majority'
 )
 
