@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Image, PageTemplate, Spacer, Paragraph
-from reportlab.platypus.flowables import KeepTogether
 from reportlab.lib.pagesizes import letter, landscape, legal
-from reportlab.lib import pagesizes
+from reportlab.platypus.flowables import KeepTogether
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.styles import ParagraphStyle
 from datetime import datetime, timedelta as td
+from reportlab.pdfbase.ttfonts import TTFont
 from flask import make_response, send_file
+from reportlab.pdfbase import pdfmetrics
 from models import LetterheadMetaData
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
+from reportlab.lib import pagesizes
 from reportlab.lib import colors
 from io import StringIO, BytesIO
 from pdfStyles import *
@@ -465,22 +467,36 @@ def pollDocument(answers, courseData, teacher, departament):
 def acreditation(data):
     output = BytesIO()
     doc = SimpleDocTemplate(output, pagesize = letter, topMargin=127, bottomMargin=50)
-    font = 'Times-Roman'
-    topMessage = [[set_title('<font name="%s"><b>EL TECNOLÓGICO NACIONAL DE MÉXICO Y EL INSTITUTO TECNOLÓGICO DE CIUDAD VALLES</b></font>'%font)]]
-    otorgan = [[set_N('<font name="%s" size="15">OTORGAN EL PRESENTE</font>'%font)]]
-    reconocimiento =[[set_N('<font name="%s" size="26">RECONOCIMIENTO</font>'%font)]]
-    a = [[set_N('<font name="%s" size="15">A</font>'%font)]]
-    name =[[set_N('<font name="%s" size="26">%s</font>'%(font, data['name']))]]
-    porSu = [[set_N('<font name="%s" size="13">POR SU PARTICIPACIÓN EN EL CURSO</font>'%(font))]]
-    course = [[set_N('<font name="%s" size="13">"%s"</font>'%(font, data['course']))]]
-    serial = [[set_N('<font name="%s" size="13">%s</font>'%(font, data['serial']))]]
-    impartido = [[set_N('<font name="%s" size="13">IMPARTIDO EN LAS INSTALACIONES DEL INSTITUTO TECNOLÓGICO DE</font>'%font)]]
-    impartido2 = [[set_N('<font name="%s" size="13">CIUDAD VALLES, DEL %s,</font>'%(font, data['period']))]]
-    impartido3 = [
-        [set_N('<font name="%s" size="13">CON UNA DURACIÓN DE %s HORAS.</font>'%(font, data['duration']))]
-    ]
+    pdfmetrics.registerFont(TTFont('MontsB', 'Montserrat-Bold.ttf'))
+    pdfmetrics.registerFont(TTFont('MontsL', 'Montserrat-Light.ttf'))
+    pdfmetrics.registerFont(TTFont('MontsEB', 'Montserrat-ExtraBold.ttf'))
+    monts_b = 'MontsB'
+    monts_l = 'MontsL'
+    monts_eb = 'MontsEB'
+
+    topMessage = [[set_title('<font name="%s"><b>EL TECNOLÓGICO NACIONAL DE MÉXICO</b></font>'%monts_eb)]]
+    top_Message = [[set_title('<font name="%s"><b>Y EL INSTITUTO TECNOLÓGICO DE CIUDAD VALLES</b></font>'%monts_eb)]]    
+    otorgan = [[set_N('<font name="%s" size="12">OTORGAN EL PRESENTE</font>'%monts_l)]]
+    reconocimiento =[[set_N('<font name="%s" size="24">RECONOCIMIENTO</font>'%monts_eb)]]
+    a = [[set_N('<font name="%s" size="15">A</font>'%monts_l)]]
+    name =[[set_N('<font name="%s" size="22">%s</font>'%(monts_eb, data['name'].upper()))]]
+    
+    porSu = [[set_N('<font name="%s" size="12">POR SU PARTICIPACIÓN EN EL CURSO</font>'%monts_l)]]
+    course = [[set_N('<b><font name="%s" size="12">"%s"</font></b>'%(monts_b, data['course'].upper()))]]
+    serial = [[set_N('<font name="%s" size="11">%s</font>'%(monts_l, data['serial']))]]
+
+    impartido = [[set_N('<font name="%s" size="12">IMPARTIDO EN LAS INSTALACIONES DEL INSTITUTO TECNOLÓGICO DE</font>'%monts_l)]]
+    impartido2 = [[set_N('<font name="%s" size="12">CIUDAD VALLES, %s,</font>'%(monts_l, data['period']))]]
+    impartido3 = [[set_N('<font name="%s" size="12">CON UNA DURACIÓN DE %s HORAS.</font>'%(monts_l, data['duration']))]]
+
+    fechaEmision = [[set_N('<font name="%s" size="12">CIUDAD VALLES, SAN LUIS POTOSÍ, A %s DE %s DEL %s.</font>'%(monts_l, datetime.now().day, months[datetime.now().month-1].upper(), datetime.now().year))]]
+    
+    principalName = [[set_N('<font name="%s" size="12">M.C. HÉCTOR AGUILAR PONCE</font>'%monts_b)]]
+    principal = [[set_N('<font name="%s" size="12">DIRECTOR</font>'%monts_b)]]
+
 
     _topMessage = Table(topMessage, colWidths=(470))
+    top_Message = Table(top_Message, colWidths=(510))
     _otorgan = Table(otorgan)
     _reconocimiento = Table(reconocimiento)
     a = Table(a)
@@ -491,9 +507,13 @@ def acreditation(data):
     impartido = Table(impartido, colWidths=(470))
     impartido2 = Table(impartido2)
     impartido3 = Table(impartido3)
+    fechaEmision = Table(fechaEmision)
+    principalName = Table(principalName)
+    principal = Table(principal)
 
     story = list()
     story.append(_topMessage)
+    story.append(top_Message)
     story.append(Spacer(1,inch/5))
     story.append(_otorgan)
     story.append(Spacer(1,inch/4))
@@ -510,7 +530,12 @@ def acreditation(data):
     story.append(impartido)
     story.append(impartido2)
     story.append(impartido3)
-    
+    story.append(Spacer(1,inch/2))
+    story.append(fechaEmision)
+    story.append(Spacer(1,inch/2))
+    story.append(principalName)
+    story.append(principal)
+
     doc.build(story, onFirstPage=portraitLetterhead, onLaterPages=portraitLetterhead)
     pdf_out = output.getvalue()
     output.close()
