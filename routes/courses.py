@@ -167,7 +167,7 @@ def course(name):                   # Ruta para consultar uno en especifico, edi
         if newDictToSend['state'] == 'Terminado' and dt.now().date() < endDay.date()+td(days=limitDays):
             newDictToSend['allowPoll'] = True
             newDictToSend['leftDays'] = (endDay.date()+td(days=limitDays)-dt.now().date()).days
-            newDictToSend['teachersThatHaveDoneThePoll'] = [val.decode('utf-8') for val in redis.lrange(keyOfRedis, 0, listRedisLen)]
+            newDictToSend['teachersThatHaveDoneThePoll'] = [val.decode('utf-8') for val in redis.lrange(keyOfRedis, 0, listRedisLen)]       #Este jala la lista de docentes que ya hicieron la encuesta
         else:
             newDictToSend['allowPoll'] = False
         teacherWillteach = Teacher.objects.filter(rfc=course['teacherRFC']).values_list("name", "fstSurname", "sndSurname")

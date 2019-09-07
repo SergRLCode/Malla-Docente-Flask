@@ -5,6 +5,7 @@ from reportlab.lib.pagesizes import letter, landscape, legal
 from reportlab.platypus.flowables import KeepTogether
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.styles import ParagraphStyle
+from PyPDF2 import PdfFileWriter, PdfFileReader
 from datetime import datetime, timedelta as td
 from reportlab.pdfbase.ttfonts import TTFont
 from flask import make_response, send_file
@@ -56,8 +57,24 @@ def getMetaData(pk):
         else:
             metaData[value] = documentInfo[value]
 
+def create_watermark(input_pdf, output, watermark):
+    watermark_obj = PdfFileReader(watermark)
+    watermark_page = watermark_obj.getPage(0)
+
+    pdf_reader = PdfFileReader(input_pdf)
+    pdf_writer = PdfFileWriter()
+
+    # Watermark all the pages
+    for page in range(pdf_reader.getNumPages()):
+        page = pdf_reader.getPage(page)
+        page.mergePage(watermark_page)
+        pdf_writer.addPage(page)
+
+    with open(output, 'wb') as out:
+        pdf_writer.write(out)
+
 def landscapeLetterhead(design, doc):
-    logoTec = Image('logotec.jpg', 77, 42) # 101, 56
+    logoTec = Image('images/logotec.jpg', 77, 42) # 101, 56
     tableHeaderContent = [
         [logoTec, metaData["typeDocument"], 'Versión:', metaData["version"]],
         ['', Paragraph(metaData["nameDocument"], styleN), 'Fecha emisión:', metaData["emitDate"]],
@@ -75,7 +92,7 @@ def landscapeLetterhead(design, doc):
     tableHeader.drawOn(design, 85, 510)
 
 def portraitLetterhead(design, doc):
-    logoTec = Image('logotec.jpg', 77, 42) # 101, 56
+    logoTec = Image('images/logotec.jpg', 77, 42) # 101, 56
     tableHeaderContent = [
         [logoTec, metaData["typeDocument"], 'Versión:', metaData["version"]],
         ['', Paragraph(metaData["nameDocument"], styleN), 'Fecha emisión:', metaData["emitDate"]],
@@ -143,7 +160,7 @@ def assistantList(teachers, courseTeacher, course):
         [set_NU(courseTeacher[0]), set_N('ME. CLAUDIA CRUZ NAVARRO')],
         [set_N("NOMBRE Y FIRMA DEL INSTRUCTOR"), set_N("NOMBRE Y FIRMA DEL COORDINADOR")],
         [set_N("R.F.C.: {}".format(courseTeacher[1]))],
-        [set_N('C.U.R.P.: campoSinAgregarxd')]
+        [set_N('C.U.R.P.: %s'%courseTeacher[2])]
     ]
     tableTitle = Table(tableTitleList)
     tableDataCourse = Table(tableDataCourseList, style=[
@@ -489,11 +506,12 @@ def acreditation(data):
     impartido2 = [[set_N('<font name="%s" size="12">CIUDAD VALLES, %s,</font>'%(monts_l, data['period']))]]
     impartido3 = [[set_N('<font name="%s" size="12">CON UNA DURACIÓN DE %s HORAS.</font>'%(monts_l, data['duration']))]]
 
-    fechaEmision = [[set_N('<font name="%s" size="12">CIUDAD VALLES, SAN LUIS POTOSÍ, A %s DE %s DEL %s.</font>'%(monts_l, datetime.now().day, months[datetime.now().month-1].upper(), datetime.now().year))]]
+    fechaEmision = [[set_N('<font name="%s" size="12">CIUDAD VALLES, SAN LUIS POTOSÍ, A %s DE %s DEL %s.</font>'%(monts_l, '0%s'%datetime.now().day if datetime.now().day < 10 else datetime.now().day, months[datetime.now().month-1].upper(), datetime.now().year))]]
     
     principalName = [[set_N('<font name="%s" size="12">M.C. HÉCTOR AGUILAR PONCE</font>'%monts_b)]]
     principal = [[set_N('<font name="%s" size="12">DIRECTOR</font>'%monts_b)]]
 
+    doc_serial = [[set_H1('<font name="%s" size="12">%s</font>'%(monts_l, data['doc_serial']))]]
 
     _topMessage = Table(topMessage, colWidths=(470))
     top_Message = Table(top_Message, colWidths=(510))
@@ -510,6 +528,7 @@ def acreditation(data):
     fechaEmision = Table(fechaEmision)
     principalName = Table(principalName)
     principal = Table(principal)
+    doc_serial = Table(doc_serial)
 
     story = list()
     story.append(_topMessage)
@@ -535,14 +554,13 @@ def acreditation(data):
     story.append(Spacer(1,inch/2))
     story.append(principalName)
     story.append(principal)
+    story.append(Spacer(1,inch/3))
+    story.append(doc_serial)
 
-    doc.build(story, onFirstPage=portraitLetterhead, onLaterPages=portraitLetterhead)
-    pdf_out = output.getvalue()
+    doc.build(story)
+    create_watermark(input_pdf='base.pdf', output='new.pdf', watermark=output)
     output.close()
-    response = make_response(pdf_out)
-    response.headers['Content-Disposition'] = "attachment; filename=asd.pdf"
-    response.headers['Content-Type'] = 'application/pdf'
-    return response
+    return send_file('new.pdf', mimetype='application/pdf')
 
 def concentrated(depName, depTeacherNum, depDocenteNum, depPercentDocent, depProfesionalNum, depPercentProfesional, depDocentProfesionalNum, depPercentDocentProf, capacitados, depPercentYesCoursed, noCapacitados, depPercentNoCoursed, totalCourses):
     output = BytesIO()

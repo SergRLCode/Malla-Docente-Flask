@@ -3,7 +3,7 @@ from datetime import datetime as dt, timedelta as td
 from passlib.hash import pbkdf2_sha256 as sha256
 from models import Course, Teacher, BlacklistJWT
 from flask import jsonify, request
-from app import app, jwt
+from app import app, jwt, redis
 
 @jwt.token_in_blacklist_loader
 def check_if_token_in_blacklist(decrypted_token):           # Verifica que el token no este en la blacklist
@@ -25,6 +25,8 @@ def check_if_token_in_blacklist(decrypted_token):           # Verifica que el to
             else:
                 course['state'] = 'Terminado'
         course.save()
+    if dt.now().month == 1 and dt.now().day == 1:
+        redis.set('count', 1)
     for value in _jwt:
         if (jti==value['jwt']):
             return True             # Si regresa un booleano False, permite el accesso, si regresa True, marca que se revoco el JWT

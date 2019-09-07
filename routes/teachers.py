@@ -31,6 +31,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
             try:
                 Teacher(
                     rfc = data["rfc"],
+                    curp = data["curp"],
                     name = data["name"],
                     fstSurname = data["fstSurname"],
                     sndSurname = data["sndSurname"],
@@ -40,6 +41,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                     studyLevel = data["studyLevel"],
                     degree = data["degree"],
                     speciality = data["speciality"],
+                    accreditedCourses = [],
                     departament = data["departament"],
                     schedule = data["schedule"],
                     position = data["position"],
@@ -54,6 +56,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
             try:
                 Teacher(
                     rfc = data["rfc"],
+                    curp = data["curp"],
                     name = data["name"],
                     fstSurname = data["fstSurname"],
                     sndSurname = data["sndSurname"],
@@ -63,6 +66,7 @@ def teachers():                     # Ruta para agregar un docente o consultar t
                     studyLevel = data["studyLevel"],
                     degree = data["degree"],
                     speciality = data["speciality"],
+                    accreditedCourses = [],                    
                     departament = "",
                     schedule = "",
                     position = "",
@@ -87,21 +91,30 @@ def teacher(rfc):                # Ruta para consultar uno en especifico, editar
             del dictReturn[value]
         return(jsonify(dictReturn), 200)
     elif request.method == 'PUT':
-        attributes = ('rfc', 'name', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
+        attributes = ('rfc', 'curp', 'name', 'fstSurname', 'sndSurname', 'numberPhone', 'email', 'studyLevel', 'degree', 'speciality', 'departament', 'schedule', 'position', 'userType')
         data = request.get_json()
         for value in attributes:
             teacher[value] = data[value]    
-        prevTeacher = Teacher.objects.get(position='Jefe de departamento', departament=data['departament'])
-        if(data['position']=='Jefe de departamento' and data['rfc']!=prevTeacher['rfc']):       # En caso que haya cambio de jefe, se cambia automaticamente al anterior
-            prevTeacher['userType'] = 'Docente'
-            prevTeacher['position'] = 'Docente chido'
-            prevTeacher.save()      
         try:
-            teacher.save()
-        except e.NotUniqueError:
-            return jsonify({'message': 'RFC duplicado'}), 403
+            prevTeacher = Teacher.objects.get(position='Jefe de departamento', departament=data['departament'])
+        except:
+            try:
+                teacher.save()
+            except e.NotUniqueError:
+                return jsonify({'message': 'RFC duplicado'}), 403
+            else:
+                return(jsonify({'message': 'Datos guardados.'}), 200)
         else:
-            return(jsonify({'message': 'Datos guardados.'}), 200)
+            if(data['position']=='Jefe de departamento' and data['rfc']!=prevTeacher['rfc']):       # En caso que haya cambio de jefe, se cambia automaticamente al anterior
+                prevTeacher['userType'] = 'Docente'
+                prevTeacher['position'] = 'Docente chido'
+                prevTeacher.save()      
+            try:
+                teacher.save()
+            except e.NotUniqueError:
+                return jsonify({'message': 'RFC duplicado'}), 403
+            else:
+                return(jsonify({'message': 'Datos guardados.'}), 200)
     elif request.method == 'DELETE':
         courses = Course.objects.filter(teachersInCourse__contains=teacher.rfc)
         requests = RequestCourse.objects.filter(requests__contains=teacher.rfc)

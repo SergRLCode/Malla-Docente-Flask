@@ -1,8 +1,8 @@
 from pdfs import assistantList, coursesList, inscription, pollDocument, concentrated, acreditation
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from models import Course, Teacher, CourseSerialToDocument
 from datetime import datetime as dt, timedelta as td
 from flask import jsonify, request
-from models import Course, Teacher
 from app import app, redis
 from auth import *
 
@@ -52,7 +52,8 @@ def assistantList_view(name):       # Ruta que regresa el PDF con la lista de as
             courseTeacher = Teacher.objects.get(rfc=course['teacherRFC'])
             courseTeacherData = [
                 "{} {} {}".format(courseTeacher["name"], courseTeacher["fstSurname"], courseTeacher["sndSurname"]),
-                courseTeacher["rfc"]
+                courseTeacher["rfc"],
+                courseTeacher["curp"]
             ]
             teachersinCourse = Teacher.objects.filter(rfc__ne=course['teacherRFC'])
             teachers = []
@@ -130,12 +131,26 @@ def _acreditation(course):
             _course = Course.objects.get(courseName=course)
         except:
             return jsonify({'message': "Don't exists"}), 404
+        count = int(redis.get('count').decode('utf-8'))
+        _count = '00%s'%count if count<10 else '0%s'%count if count<100 else '%s'%count
+        try:
+            damnedData = CourseSerialToDocument.objects.get(course=course, rfc=get_jwt_identity()[0])
+            damnedSerial = damnedData['serial']
+        except:
+            CourseSerialToDocument(
+                course=course,
+                rfc=get_jwt_identity()[0],
+                serial='%s/%s'%(_count, dt.now().year)
+            ).save()
+            redis.set('count', count+1)
+            damnedSerial = '%s/%s'%(_count, dt.now().year)
         someData = {
             'name': '%s %s %s'%(data['name'], data['fstSurname'], data['sndSurname']),
             'course': _course['courseName'],
             'serial': _course['serial'],
             'period': periodOfTime(_course['dateStart'], _course['dateEnd']).upper(),
-            'duration': _course['totalHours']
+            'duration': _course['totalHours'],
+            'doc_serial': damnedSerial
         }
         return acreditation(someData)
 

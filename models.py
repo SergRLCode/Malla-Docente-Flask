@@ -35,6 +35,11 @@ class Course(db.Document):
     # Status
     state = db.StringField(choices=state_choice, default='Por empezar')
 
+class CourseSerialToDocument(db.Document):
+    course = db.StringField()
+    rfc = db.StringField()
+    serial = db.StringField()
+    
 class Teacher(db.Document):
     userType_choice = (
         ('Docente', 'Docente'),
@@ -53,6 +58,7 @@ class Teacher(db.Document):
     )
     # Personal Data
     rfc = db.StringField(max_length=13, required=True, unique=True)
+    curp = db.StringField(required=True)
     name = db.StringField()
     fstSurname = db.StringField()
     sndSurname = db.StringField()
